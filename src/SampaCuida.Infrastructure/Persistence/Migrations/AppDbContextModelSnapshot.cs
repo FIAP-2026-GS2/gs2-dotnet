@@ -66,6 +66,155 @@ namespace SampaCuida.Infrastructure.Persistence.Migrations
                     b.ToTable("CAMERA", (string)null);
                 });
 
+            modelBuilder.Entity("SampaCuida.Domain.Entities.Capture", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_CAPTURE");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CameraId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_CAMERA");
+
+                    b.Property<DateTime>("CaptureDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CAPTURE_DATE");
+
+                    b.Property<int?>("CaptureScheduleId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_SCHEDULE");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("LATITUDE");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("LONGITUDE");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("SOURCE");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("STATUS");
+
+                    b.Property<int?>("TriggerEventId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_EVENT");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ID_USER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CaptureScheduleId");
+
+                    b.HasIndex("TriggerEventId");
+
+                    b.HasIndex("CameraId", "CaptureDate")
+                        .IsUnique()
+                        .HasDatabaseName("UX_CAPTURE_CAMERA_DATE")
+                        .HasFilter("[ID_CAMERA] IS NOT NULL");
+
+                    b.ToTable("CAPTURE", (string)null);
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.CaptureSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_SCHEDULE");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CameraId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_CAMERA");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("END_DATE");
+
+                    b.Property<TimeOnly>("ExecutionTime")
+                        .HasColumnType("time")
+                        .HasColumnName("EXECUTION_TIME");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IS_ACTIVE");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("START_DATE");
+
+                    b.Property<string>("Weekday")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("WEEKDAY");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraId");
+
+                    b.ToTable("CAPTURE_SCHEDULE", (string)null);
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.Image", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_IMAGE");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CaptureId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_CAPTURE");
+
+                    b.Property<string>("FileHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nchar(64)")
+                        .HasColumnName("FILE_HASH")
+                        .IsFixedLength();
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("FILE_NAME");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("FILE_PATH");
+
+                    b.Property<DateTime>("StorageDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("STORAGE_DATE");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CaptureId");
+
+                    b.ToTable("IMAGE", (string)null);
+                });
+
             modelBuilder.Entity("SampaCuida.Domain.Entities.IssueType", b =>
                 {
                     b.Property<int>("Id")
@@ -303,6 +452,52 @@ namespace SampaCuida.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("MonitoringPoint");
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.Capture", b =>
+                {
+                    b.HasOne("SampaCuida.Domain.Entities.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SampaCuida.Domain.Entities.CaptureSchedule", "CaptureSchedule")
+                        .WithMany()
+                        .HasForeignKey("CaptureScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SampaCuida.Domain.Entities.TriggerEvent", "TriggerEvent")
+                        .WithMany()
+                        .HasForeignKey("TriggerEventId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Camera");
+
+                    b.Navigation("CaptureSchedule");
+
+                    b.Navigation("TriggerEvent");
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.CaptureSchedule", b =>
+                {
+                    b.HasOne("SampaCuida.Domain.Entities.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Camera");
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.Image", b =>
+                {
+                    b.HasOne("SampaCuida.Domain.Entities.Capture", "Capture")
+                        .WithMany()
+                        .HasForeignKey("CaptureId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Capture");
                 });
 
             modelBuilder.Entity("SampaCuida.Domain.Entities.Team", b =>

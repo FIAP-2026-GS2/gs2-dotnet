@@ -11,6 +11,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<IssueType> IssueTypes => Set<IssueType>();
     public DbSet<TriggerEvent> TriggerEvents => Set<TriggerEvent>();
+    public DbSet<CaptureSchedule> CaptureSchedules => Set<CaptureSchedule>();
+    public DbSet<Capture> Captures => Set<Capture>();
+    public DbSet<Image> Images => Set<Image>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
