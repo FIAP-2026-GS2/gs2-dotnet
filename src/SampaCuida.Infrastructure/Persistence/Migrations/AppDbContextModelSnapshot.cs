@@ -66,6 +66,44 @@ namespace SampaCuida.Infrastructure.Persistence.Migrations
                     b.ToTable("CAMERA", (string)null);
                 });
 
+            modelBuilder.Entity("SampaCuida.Domain.Entities.IssueType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_ISSUE_TYPE");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("CATEGORY");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("DESCRIPTION");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IS_ACTIVE");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("NAME");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("ISSUE_TYPE", (string)null);
+                });
+
             modelBuilder.Entity("SampaCuida.Domain.Entities.MonitoringPoint", b =>
                 {
                     b.Property<int>("Id")
@@ -124,6 +162,138 @@ namespace SampaCuida.Infrastructure.Persistence.Migrations
                     b.ToTable("MONITORING_POINT", (string)null);
                 });
 
+            modelBuilder.Entity("SampaCuida.Domain.Entities.MunicipalAgency", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_AGENCY");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("CITY");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("DESCRIPTION");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IS_ACTIVE");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("NAME");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nchar(2)")
+                        .HasColumnName("STATE")
+                        .IsFixedLength();
+
+                    b.Property<string>("Subprefecture")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("SUBPREFECTURE");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MUNICIPAL_AGENCY", (string)null);
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.Team", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_TEAM");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("DESCRIPTION");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IS_ACTIVE");
+
+                    b.Property<int>("MunicipalAgencyId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_AGENCY");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("NAME");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MunicipalAgencyId");
+
+                    b.ToTable("TEAM", (string)null);
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.TriggerEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_EVENT");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AlertSource")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ALERT_SOURCE");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("DESCRIPTION");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("END_DATE");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("EVENT_TYPE");
+
+                    b.Property<string>("Intensity")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("INTENSITY");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("START_DATE");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("STATUS");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TRIGGER_EVENT", (string)null);
+                });
+
             modelBuilder.Entity("SampaCuida.Domain.Entities.Camera", b =>
                 {
                     b.HasOne("SampaCuida.Domain.Entities.MonitoringPoint", "MonitoringPoint")
@@ -133,6 +303,17 @@ namespace SampaCuida.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("MonitoringPoint");
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.Team", b =>
+                {
+                    b.HasOne("SampaCuida.Domain.Entities.MunicipalAgency", "MunicipalAgency")
+                        .WithMany()
+                        .HasForeignKey("MunicipalAgencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MunicipalAgency");
                 });
 #pragma warning restore 612, 618
         }
