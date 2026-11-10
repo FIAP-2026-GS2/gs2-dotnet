@@ -26,6 +26,27 @@ public static class Guard
             throw new DomainException("A longitude deve estar entre -180 e 180.");
     }
 
+    // Sigla da UF (ex.: "sp" vira "SP"); nome por extenso é recusado.
+    public static string StateCode(string? value)
+    {
+        // Limite folgado só para chegar à mensagem certa ("sigla com 2 letras").
+        var state = RequiredText(value, "estado", 50).ToUpperInvariant();
+
+        if (state.Length != 2 || !state.All(char.IsAsciiLetterUpper))
+            throw new DomainException("O estado deve ser a sigla da UF com 2 letras (ex.: SP).");
+
+        return state;
+    }
+
+    // Recusa números que não correspondem a nenhum valor do enum (ex.: (IssueCategory)99).
+    public static TEnum DefinedEnum<TEnum>(TEnum value, string fieldName) where TEnum : struct, Enum
+    {
+        if (!Enum.IsDefined(value))
+            throw new DomainException($"O valor informado para {fieldName} é inválido.");
+
+        return value;
+    }
+
     private static string CheckLength(string value, string fieldName, int maxLength)
     {
         if (value.Length > maxLength)

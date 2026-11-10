@@ -1,5 +1,4 @@
 using SampaCuida.Domain.Common;
-using SampaCuida.Domain.Exceptions;
 
 namespace SampaCuida.Domain.Entities;
 
@@ -40,22 +39,11 @@ public class MonitoringPoint
 
         Street = Guard.RequiredText(street, "rua", StreetMaxLength);
         City = Guard.RequiredText(city, "cidade", CityMaxLength);
-        State = NormalizeState(state);
+        State = Guard.StateCode(state);
         Latitude = latitude;
         Longitude = longitude;
         StreetNumber = Guard.OptionalText(streetNumber, "número", StreetNumberMaxLength);
         Neighborhood = Guard.OptionalText(neighborhood, "bairro", NeighborhoodMaxLength);
         Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
-    }
-
-    // Sigla da UF (ex.: "sp" vira "SP"); nome por extenso é recusado.
-    private static string NormalizeState(string state)
-    {
-        var value = Guard.RequiredText(state, "estado", StateLength).ToUpperInvariant();
-
-        if (value.Length != StateLength || !value.All(char.IsAsciiLetterUpper))
-            throw new DomainException("O estado deve ser a sigla da UF com 2 letras (ex.: SP).");
-
-        return value;
     }
 }
