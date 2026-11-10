@@ -37,7 +37,7 @@ public class TriggerEvent
     {
         EventType = Guard.DefinedEnum(eventType, "tipo de evento");
         AlertSource = Guard.RequiredText(alertSource, "fonte do alerta", AlertSourceMaxLength);
-        StartDate = RequireUtc(startDate, "início");
+        StartDate = Guard.Utc(startDate, "início");
         Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
         Intensity = Guard.OptionalText(intensity, "intensidade", IntensityMaxLength);
         Status = TriggerEventStatus.ACTIVE;
@@ -49,22 +49,12 @@ public class TriggerEvent
         if (!IsActive)
             throw new DomainException("O evento já foi encerrado.");
 
-        RequireUtc(endDate, "fim");
+        Guard.Utc(endDate, "fim");
 
         if (endDate < StartDate)
             throw new DomainException("O fim do evento não pode ser anterior ao início.");
 
         EndDate = endDate;
         Status = TriggerEventStatus.ENDED;
-    }
-
-    // UTC evita ambiguidade: o servidor no Azure roda em UTC, e o horário de
-    // São Paulo é só uma forma de exibir.
-    private static DateTime RequireUtc(DateTime value, string fieldName)
-    {
-        if (value.Kind != DateTimeKind.Utc)
-            throw new DomainException($"A data de {fieldName} deve estar em UTC.");
-
-        return value;
     }
 }

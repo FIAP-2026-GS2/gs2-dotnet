@@ -38,6 +38,24 @@ public static class Guard
         return state;
     }
 
+    // Instantes ficam em UTC: o servidor no Azure roda em UTC, e o horário de
+    // São Paulo é só uma forma de exibir.
+    public static DateTime Utc(DateTime value, string fieldName)
+    {
+        if (value.Kind != DateTimeKind.Utc)
+            throw new DomainException($"A data de {fieldName} deve estar em UTC.");
+
+        return value;
+    }
+
+    public static int RequiredId(int id, string fieldName)
+    {
+        if (id <= 0)
+            throw new DomainException($"O campo {fieldName} é obrigatório.");
+
+        return id;
+    }
+
     // Recusa números que não correspondem a nenhum valor do enum (ex.: (IssueCategory)99).
     public static TEnum DefinedEnum<TEnum>(TEnum value, string fieldName) where TEnum : struct, Enum
     {
