@@ -26,52 +26,113 @@ namespace SampaCuida.Infrastructure.Persistence.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("ID_CAMERA");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("CAMERA_CODE");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("DESCRIPTION");
 
-                    b.Property<DateOnly>("InstalledAt")
-                        .HasColumnType("date");
+                    b.Property<DateOnly?>("InstallationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("INSTALLATION_DATE");
 
-                    b.Property<decimal>("Latitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<decimal>("Longitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<string>("Neighborhood")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("nvarchar(80)");
+                    b.Property<int>("MonitoringPointId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_POINT");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("STATUS");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Cameras", (string)null);
+                    b.HasIndex("MonitoringPointId");
+
+                    b.ToTable("CAMERA", (string)null);
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.MonitoringPoint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_POINT");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("CITY");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("DESCRIPTION");
+
+                    b.Property<decimal>("Latitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("LATITUDE");
+
+                    b.Property<decimal>("Longitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("LONGITUDE");
+
+                    b.Property<string>("Neighborhood")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)")
+                        .HasColumnName("NEIGHBORHOOD");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nchar(2)")
+                        .HasColumnName("STATE")
+                        .IsFixedLength();
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("STREET");
+
+                    b.Property<string>("StreetNumber")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("STREET_NUMBER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MONITORING_POINT", (string)null);
+                });
+
+            modelBuilder.Entity("SampaCuida.Domain.Entities.Camera", b =>
+                {
+                    b.HasOne("SampaCuida.Domain.Entities.MonitoringPoint", "MonitoringPoint")
+                        .WithMany()
+                        .HasForeignKey("MonitoringPointId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MonitoringPoint");
                 });
 #pragma warning restore 612, 618
         }

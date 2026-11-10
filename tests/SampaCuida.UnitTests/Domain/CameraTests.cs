@@ -8,26 +8,24 @@ public class CameraTests
 {
     private static Camera CreateCamera(
         string code = "CAM-001",
-        string description = "Cruzamento principal",
-        string address = "Av. Paulista, 1000",
-        string neighborhood = "Bela Vista",
-        decimal latitude = -23.561414m,
-        decimal longitude = -46.655881m) =>
-        new(code, description, address, neighborhood, latitude, longitude, new DateOnly(2025, 3, 10));
+        int monitoringPointId = 1,
+        string? description = "Câmera voltada para a faixa",
+        DateOnly? installationDate = null) =>
+        new(code, monitoringPointId, description, installationDate);
 
     [Fact]
     public void Constructor_with_valid_data_creates_active_camera()
     {
-        var camera = CreateCamera();
+        var camera = CreateCamera(installationDate: new DateOnly(2025, 3, 10));
 
         Assert.Equal("CAM-001", camera.Code);
-        Assert.Equal(-23.561414m, camera.Latitude);
-        Assert.Equal(new DateOnly(2025, 3, 10), camera.InstalledAt);
+        Assert.Equal(1, camera.MonitoringPointId);
+        Assert.Equal(new DateOnly(2025, 3, 10), camera.InstallationDate);
         Assert.Equal(CameraStatus.ACTIVE, camera.Status);
     }
 
     [Fact]
-    public void Constructor_removes_spaces_around_text()
+    public void Constructor_removes_spaces_around_code()
     {
         var camera = CreateCamera(code: "  CAM-002  ");
 
@@ -53,34 +51,22 @@ public class CameraTests
     }
 
     [Theory]
-    [InlineData(-90.000001)]
-    [InlineData(90.000001)]
-    [InlineData(500)]
-    public void Constructor_rejects_latitude_out_of_range(double latitude)
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Constructor_rejects_missing_monitoring_point(int monitoringPointId)
     {
-        var exception = Assert.Throws<DomainException>(() => CreateCamera(latitude: (decimal)latitude));
+        var exception = Assert.Throws<DomainException>(() =>
+            CreateCamera(monitoringPointId: monitoringPointId));
 
-        Assert.Contains("latitude", exception.Message);
+        Assert.Contains("ponto monitorado", exception.Message);
     }
 
-    [Theory]
-    [InlineData(-180.000001)]
-    [InlineData(180.000001)]
-    public void Constructor_rejects_longitude_out_of_range(double longitude)
+    [Fact]
+    public void Constructor_accepts_camera_without_optional_fields()
     {
-        var exception = Assert.Throws<DomainException>(() => CreateCamera(longitude: (decimal)longitude));
+        var camera = CreateCamera(description: "   ", installationDate: null);
 
-        Assert.Contains("longitude", exception.Message);
-    }
-
-    [Theory]
-    [InlineData(-90, -180)]
-    [InlineData(90, 180)]
-    public void Constructor_accepts_coordinates_on_the_limits(int latitude, int longitude)
-    {
-        var camera = CreateCamera(latitude: latitude, longitude: longitude);
-
-        Assert.Equal(latitude, camera.Latitude);
-        Assert.Equal(longitude, camera.Longitude);
+        Assert.Null(camera.Description);
+        Assert.Null(camera.InstallationDate);
     }
 }
