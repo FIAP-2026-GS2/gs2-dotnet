@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SampaCuida.Application\SampaCuida.Application.csproj" />
+    <ProjectReference Include="..\SampaCuida.Infrastructure\SampaCuida.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>da624bed-7c95-48a7-819d-f9cd5b07c446</UserSecretsId>
+  </PropertyGroup>
+
+</Project>
