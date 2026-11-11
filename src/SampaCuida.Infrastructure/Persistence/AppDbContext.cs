@@ -22,6 +22,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ["UX_ISSUE_ASSIGNMENT_OPEN"] = "A ocorrência já tem uma equipe atribuída."
     };
 
+    // Mensagem amigável para cada FK, quando o registro ainda tem dependentes.
+    private static readonly Dictionary<string, string> ForeignKeyMessages = new()
+    {
+        ["FK_CAMERA_MONITORING_POINT_ID_POINT"] = "O ponto monitorado ainda tem câmeras vinculadas.",
+        ["FK_TEAM_MUNICIPAL_AGENCY_ID_AGENCY"] = "O órgão ainda tem equipes vinculadas.",
+        ["FK_CAPTURE_SCHEDULE_CAMERA_ID_CAMERA"] = "A câmera ainda tem agendas de captura (desative-as em vez de remover).",
+        ["FK_CAPTURE_CAMERA_ID_CAMERA"] = "A câmera já tem capturas registradas (desative-a em vez de remover).",
+        ["FK_CAPTURE_CAPTURE_SCHEDULE_ID_SCHEDULE"] = "A agenda já gerou capturas (desative-a em vez de remover).",
+        ["FK_CAPTURE_TRIGGER_EVENT_ID_EVENT"] = "O alerta já gerou capturas.",
+        ["FK_ISSUE_ASSIGNMENT_TEAM_ID_TEAM"] = "A equipe já tem atribuições (desative-a em vez de remover).",
+        ["FK_AI_DETECTION_ISSUE_TYPE_ID_ISSUE_TYPE"] = "O tipo de problema já é usado por detecções (desative-o em vez de remover).",
+        ["FK_ISSUE_REPORT_ISSUE_TYPE_ID_ISSUE_TYPE"] = "O tipo de problema já é usado por ocorrências (desative-o em vez de remover)."
+    };
+
     public DbSet<MonitoringPoint> MonitoringPoints => Set<MonitoringPoint>();
     public DbSet<Camera> Cameras => Set<Camera>();
     public DbSet<MunicipalAgency> MunicipalAgencies => Set<MunicipalAgency>();
@@ -39,6 +53,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+    // O SQL Server (datetime2) não guarda se a data é UTC. Como gravamos sempre em UTC,
+    // toda data lida volta marcada como UTC: as regras do Domain e o JSON ("...Z") ficam certos.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<UtcDateTimeConverter>();
+    }
 
     // Traduz as recusas do banco (índice único e FK) em ConflictException, que a API devolve como 409.
     // Assim as rotas não precisam de try/catch e o Application não conhece o SQL Server.
@@ -60,8 +82,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             }
 
             if (sql.Number == ForeignKeyViolation)
-                throw new ConflictException(
-                    "Operação recusada: o registro está ligado a outros dados (ex.: um ponto que ainda tem câmeras).");
+            {
+                var message = ForeignKeyMessages
+                    .FirstOrDefault(entry => sql.Message.Contains(entry.Key)).Value
+                    ?? "Operação recusada: o registro está ligado a outros dados.";
+
+                throw new ConflictException(message);
+            }
 
             throw;
         }

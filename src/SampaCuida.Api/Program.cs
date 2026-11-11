@@ -50,6 +50,11 @@ app.MapGet("/", () => Results.Ok(new { name = "Sampa Cuida API", status = "runni
 
 app.MapMonitoringPointEndpoints();
 app.MapCameraEndpoints();
+app.MapCaptureScheduleEndpoints();
+app.MapMunicipalAgencyEndpoints();
+app.MapTeamEndpoints();
+app.MapIssueTypeEndpoints();
+app.MapTriggerEventEndpoints();
 
 app.Run();
 
