@@ -3,7 +3,12 @@ using System.Text.Json;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using SampaCuida.Application.Cameras;
+using SampaCuida.Application.CaptureSchedules;
+using SampaCuida.Application.IssueTypes;
 using SampaCuida.Application.MonitoringPoints;
+using SampaCuida.Application.MunicipalAgencies;
+using SampaCuida.Application.Teams;
+using SampaCuida.Application.TriggerEvents;
 
 namespace SampaCuida.Application;
 
@@ -21,6 +26,11 @@ public static class DependencyInjection
 
         services.AddScoped<IMonitoringPointService, MonitoringPointService>();
         services.AddScoped<ICameraService, CameraService>();
+        services.AddScoped<IMunicipalAgencyService, MunicipalAgencyService>();
+        services.AddScoped<ITeamService, TeamService>();
+        services.AddScoped<IIssueTypeService, IssueTypeService>();
+        services.AddScoped<ICaptureScheduleService, CaptureScheduleService>();
+        services.AddScoped<ITriggerEventService, TriggerEventService>();
 
         return services;
     }
