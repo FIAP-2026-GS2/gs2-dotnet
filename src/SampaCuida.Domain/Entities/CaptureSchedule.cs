@@ -1,4 +1,5 @@
 using SampaCuida.Domain.Common;
+using SampaCuida.Domain.Enums;
 using SampaCuida.Domain.Exceptions;
 
 namespace SampaCuida.Domain.Entities;
@@ -52,6 +53,35 @@ public class CaptureSchedule
         EndDate = endDate;
         // Sem dia da semana, a agenda vale para todos os dias.
         Weekday = weekday is null ? null : Guard.DefinedEnum(weekday.Value, "dia da semana");
+    }
+
+    // As análises saem do horário: meio-dia serve para buraco, faixa e o poste "de dia";
+    // meia-noite, para o poste "de noite".
+    public IReadOnlyList<AnalysisType> Analyses => ExecutionTime == Noon
+        ? [AnalysisType.POTHOLE_CROSSWALK, AnalysisType.STREETLIGHT]
+        : [AnalysisType.STREETLIGHT];
+
+    /// <summary>
+    /// A agenda está devida nesta data e hora de São Paulo? Vale do horário da agenda até
+    /// o fim da tolerância (ex.: 12:00 até 12:29 com 30 minutos). A janela existe porque o
+    /// frame é extraído da gravação: às 12:20 ainda dá para buscar o frame das 12:00.
+    /// </summary>
+    public bool IsDueAt(DateOnly localDate, TimeOnly localTime, TimeSpan tolerance)
+    {
+        if (tolerance <= TimeSpan.Zero)
+            throw new DomainException("A tolerância da agenda deve ser positiva.");
+
+        if (!IsActive)
+            return false;
+
+        if (localDate < StartDate || localDate > EndDate)
+            return false;
+
+        if (Weekday is not null && localDate.DayOfWeek != Weekday)
+            return false;
+
+        var elapsed = localTime.ToTimeSpan() - ExecutionTime.ToTimeSpan();
+        return elapsed >= TimeSpan.Zero && elapsed < tolerance;
     }
 
     // Desativar em vez de apagar preserva o histórico. Repetir a chamada não muda nada.

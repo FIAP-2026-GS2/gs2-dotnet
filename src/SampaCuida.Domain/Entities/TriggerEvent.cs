@@ -43,6 +43,26 @@ public class TriggerEvent
         Status = TriggerEventStatus.ACTIVE;
     }
 
+    /// <summary>
+    /// Horário do frame de chuva que vale agora, ou null se não há frame devido.
+    /// Os horários começam no início do alerta e se repetem a cada intervalo
+    /// (ex.: alerta às 15:00 e intervalo de 3 h: 15:00, 18:00, 21:00...).
+    /// Às 18:10, com tolerância de 30 min, o horário devido é 18:00; às 18:40, nenhum.
+    /// </summary>
+    public DateTime? CurrentSlot(DateTime nowUtc, TimeSpan interval, TimeSpan tolerance)
+    {
+        if (interval <= TimeSpan.Zero || tolerance <= TimeSpan.Zero)
+            throw new DomainException("O intervalo e a tolerância do alerta devem ser positivos.");
+
+        if (!IsActive || nowUtc < StartDate)
+            return null;
+
+        var completedIntervals = (nowUtc - StartDate).Ticks / interval.Ticks;
+        var slot = StartDate.AddTicks(completedIntervals * interval.Ticks);
+
+        return nowUtc - slot < tolerance ? slot : null;
+    }
+
     // Tipo e início não mudam depois de criado: só os dados descritivos.
     public void UpdateDetails(string alertSource, string? description, string? intensity)
     {
