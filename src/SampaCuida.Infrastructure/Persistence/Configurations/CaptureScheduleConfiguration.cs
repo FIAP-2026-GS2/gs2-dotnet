@@ -35,6 +35,9 @@ public class CaptureScheduleConfiguration : IEntityTypeConfiguration<CaptureSche
         builder.Property(schedule => schedule.CameraId)
             .HasColumnName("ID_CAMERA");
 
+        // As análises são calculadas a partir do horário; não viram coluna.
+        builder.Ignore(schedule => schedule.Analyses);
+
         builder.HasOne(schedule => schedule.Camera)
             .WithMany()
             .HasForeignKey(schedule => schedule.CameraId)
