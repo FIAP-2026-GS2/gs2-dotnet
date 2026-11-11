@@ -85,6 +85,20 @@ public class MonitoringPointTests
     }
 
     [Fact]
+    public void Update_changes_data_and_keeps_validations()
+    {
+        var point = CreatePoint();
+
+        point.Update("Rua Augusta", "São Paulo", "sp", -23.55m, -46.65m, "500", null, null);
+
+        Assert.Equal("Rua Augusta", point.Street);
+        Assert.Equal("SP", point.State);
+        Assert.Null(point.Neighborhood);
+        Assert.Throws<DomainException>(() =>
+            point.Update("Rua Augusta", "São Paulo", "SP", 91m, -46.65m, null, null, null));
+    }
+
+    [Fact]
     public void Constructor_turns_blank_optional_text_into_null()
     {
         var point = CreatePoint(streetNumber: "  ", neighborhood: "", description: null);

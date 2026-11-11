@@ -35,6 +35,20 @@ public class MonitoringPoint
         string? neighborhood = null,
         string? description = null)
     {
+        Update(street, city, state, latitude, longitude, streetNumber, neighborhood, description);
+    }
+
+    // O construtor e a atualização passam pelas mesmas validações: um único lugar com as regras.
+    public void Update(
+        string street,
+        string city,
+        string state,
+        decimal latitude,
+        decimal longitude,
+        string? streetNumber,
+        string? neighborhood,
+        string? description)
+    {
         Guard.Coordinates(latitude, longitude);
 
         Street = Guard.RequiredText(street, "rua", StreetMaxLength);
