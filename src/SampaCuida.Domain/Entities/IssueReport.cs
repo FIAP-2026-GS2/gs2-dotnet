@@ -150,10 +150,36 @@ public class IssueReport
         return assignment;
     }
 
+    // Troca a equipe de uma ocorrência já atribuída (ex.: a primeira equipe não pode ir).
+    // Fecha a atribuição atual, abre outra e registra no histórico; o status continua ASSIGNED.
+    public IssueAssignment Reassign(int teamId, DateTime reassignedAt, string? userId = null)
+    {
+        if (Status != IssueStatus.ASSIGNED)
+            throw new DomainException($"Só é possível trocar a equipe de uma ocorrência com status ASSIGNED (atual: {Status}).");
+
+        var current = _assignments.Single(assignment => assignment.IsOpen);
+
+        if (current.TeamId == teamId)
+            throw new DomainException("A ocorrência já está atribuída a essa equipe.");
+
+        current.Close(reassignedAt);
+
+        var assignment = new IssueAssignment(this, teamId, reassignedAt);
+        _assignments.Add(assignment);
+        _history.Add(new IssueHistory(
+            this, IssueStatus.ASSIGNED, IssueStatus.ASSIGNED, "Equipe trocada.", reassignedAt, userId));
+
+        return assignment;
+    }
+
     public void ChangeStatus(IssueStatus newStatus, DateTime changedAt, string? notes = null, string? userId = null)
     {
         if (newStatus == IssueStatus.ASSIGNED)
             throw new DomainException("Para atribuir uma equipe, use a atribuição.");
+
+        // Rejeitar é dizer "a IA errou": o motivo fica no histórico, como auditoria e retorno para a IA.
+        if (newStatus == IssueStatus.REJECTED && string.IsNullOrWhiteSpace(notes))
+            throw new DomainException("Informe o motivo da rejeição.");
 
         if (!AllowedTransitions[Status].Contains(newStatus))
             throw new DomainException($"Não é permitido mudar o status de {Status} para {newStatus}.");

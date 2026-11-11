@@ -72,6 +72,7 @@ app.MapTriggerEventEndpoints();
 app.MapCaptureEndpoints();
 app.MapAnalysisEndpoints();
 app.MapDueScheduleEndpoints();
+app.MapIssueReportEndpoints();
 
 app.Run();
 

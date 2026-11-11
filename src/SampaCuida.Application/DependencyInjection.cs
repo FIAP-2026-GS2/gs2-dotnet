@@ -6,6 +6,7 @@ using SampaCuida.Application.Analyses;
 using SampaCuida.Application.Cameras;
 using SampaCuida.Application.Captures;
 using SampaCuida.Application.CaptureSchedules;
+using SampaCuida.Application.IssueReports;
 using SampaCuida.Application.IssueTypes;
 using SampaCuida.Application.MonitoringPoints;
 using SampaCuida.Application.MunicipalAgencies;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<ICaptureService, CaptureService>();
         services.AddScoped<IAnalysisService, AnalysisService>();
         services.AddScoped<IDueScheduleService, DueScheduleService>();
+        services.AddScoped<IIssueReportService, IssueReportService>();
 
         return services;
     }

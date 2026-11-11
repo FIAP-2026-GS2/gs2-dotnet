@@ -190,8 +190,51 @@ public class IssueReportTests
     public void Closed_report_does_not_accept_new_detections()
     {
         var report = CreateReport();
-        report.ChangeStatus(IssueStatus.REJECTED, Opened.AddHours(1));
+        report.ChangeStatus(IssueStatus.REJECTED, Opened.AddHours(1), "Falso positivo: sombra de árvore.");
 
         Assert.Throws<DomainException>(() => report.RegisterDetection(CreateDetection()));
+    }
+
+    [Fact]
+    public void Rejecting_without_reason_is_refused()
+    {
+        var report = CreateReport();
+
+        var exception = Assert.Throws<DomainException>(() =>
+            report.ChangeStatus(IssueStatus.REJECTED, Opened.AddHours(1), notes: "  "));
+
+        Assert.Contains("motivo", exception.Message);
+        Assert.Equal(IssueStatus.OPEN, report.Status);
+    }
+
+    [Fact]
+    public void Reassign_closes_current_assignment_and_opens_another()
+    {
+        var report = CreateReport();
+        var first = report.AssignTo(teamId: 4, Opened.AddHours(1));
+
+        var second = report.Reassign(teamId: 5, Opened.AddHours(2), userId: "gestor-1");
+
+        Assert.Equal(IssueStatus.ASSIGNED, report.Status);
+        Assert.False(first.IsOpen);
+        Assert.True(second.IsOpen);
+        Assert.Equal(5, second.TeamId);
+        Assert.Single(report.Assignments, assignment => assignment.IsOpen);
+        Assert.Equal("Equipe trocada.", report.History.Last().Notes);
+    }
+
+    [Fact]
+    public void Reassign_to_the_same_team_is_refused()
+    {
+        var report = CreateReport();
+        report.AssignTo(4, Opened.AddHours(1));
+
+        Assert.Throws<DomainException>(() => report.Reassign(4, Opened.AddHours(2)));
+    }
+
+    [Fact]
+    public void Reassign_requires_status_assigned()
+    {
+        Assert.Throws<DomainException>(() => CreateReport().Reassign(4, Opened.AddHours(1)));
     }
 }
