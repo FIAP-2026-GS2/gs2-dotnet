@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SampaCuida.Application.Abstractions;
 using SampaCuida.Application.Common.Exceptions;
 using SampaCuida.Domain.Entities;
+using SampaCuida.Infrastructure.Idempotency;
 
 namespace SampaCuida.Infrastructure.Persistence;
 
@@ -50,6 +51,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<IssueReport> IssueReports => Set<IssueReport>();
     public DbSet<IssueHistory> IssueHistories => Set<IssueHistory>();
     public DbSet<IssueAssignment> IssueAssignments => Set<IssueAssignment>();
+
+    // Tabela técnica: fica fora do IAppDbContext, porque só o Infrastructure a usa.
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

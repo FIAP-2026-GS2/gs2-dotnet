@@ -692,6 +692,37 @@ namespace SampaCuida.Infrastructure.Persistence.Migrations
                     b.ToTable("TRIGGER_EVENT", (string)null);
                 });
 
+            modelBuilder.Entity("SampaCuida.Infrastructure.Idempotency.IdempotencyRecord", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("IDEMPOTENCY_KEY");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nchar(64)")
+                        .HasColumnName("REQUEST_HASH")
+                        .IsFixedLength();
+
+                    b.Property<string>("ResponseBody")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("RESPONSE_BODY");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("int")
+                        .HasColumnName("STATUS_CODE");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("IDEMPOTENCY_RECORD", (string)null);
+                });
+
             modelBuilder.Entity("SampaCuida.Domain.Entities.AiAnalysis", b =>
                 {
                     b.HasOne("SampaCuida.Domain.Entities.Image", "Image")

@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using SampaCuida.Api.Endpoints;
 using SampaCuida.Api.Errors;
+using SampaCuida.Api.Idempotency;
 using SampaCuida.Application;
 using SampaCuida.Infrastructure;
 
@@ -25,13 +26,18 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
+{
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Sampa Cuida API",
         Version = "v1",
         Description = "Zeladoria urbana a partir das câmeras do Smart Sampa: câmeras, agendas de captura, " +
                       "detecções da IA e ocorrências acompanhadas pela prefeitura e pelo cidadão."
-    }));
+    });
+
+    // Mostra o header Idempotency-Key nas rotas idempotentes.
+    options.OperationFilter<IdempotencyHeaderOperationFilter>();
+});
 
 var app = builder.Build();
 
@@ -55,6 +61,7 @@ app.MapMunicipalAgencyEndpoints();
 app.MapTeamEndpoints();
 app.MapIssueTypeEndpoints();
 app.MapTriggerEventEndpoints();
+app.MapCaptureEndpoints();
 
 app.Run();
 
