@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SampaCuida.Application.Abstractions;
 using SampaCuida.Infrastructure.Persistence;
 
 namespace SampaCuida.Infrastructure;
@@ -16,6 +17,9 @@ public static class DependencyInjection
                 "A connection string 'DefaultConnection' não foi configurada.");
 
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+
+        // O Application pede IAppDbContext e recebe o mesmo AppDbContext da requisição.
+        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
         return services;
     }

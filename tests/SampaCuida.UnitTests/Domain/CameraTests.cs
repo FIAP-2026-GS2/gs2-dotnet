@@ -62,6 +62,30 @@ public class CameraTests
     }
 
     [Fact]
+    public void Update_changes_data_with_the_same_validations()
+    {
+        var camera = CreateCamera();
+
+        camera.Update("  CAM-009 ", monitoringPointId: 2, description: null, installationDate: new DateOnly(2026, 1, 5));
+
+        Assert.Equal("CAM-009", camera.Code);
+        Assert.Equal(2, camera.MonitoringPointId);
+        Assert.Null(camera.Description);
+        Assert.Throws<DomainException>(() => camera.Update("", 2, null, null));
+    }
+
+    [Fact]
+    public void ChangeStatus_accepts_known_status_and_rejects_unknown()
+    {
+        var camera = CreateCamera();
+
+        camera.ChangeStatus(CameraStatus.MAINTENANCE);
+
+        Assert.Equal(CameraStatus.MAINTENANCE, camera.Status);
+        Assert.Throws<DomainException>(() => camera.ChangeStatus((CameraStatus)42));
+    }
+
+    [Fact]
     public void Constructor_accepts_camera_without_optional_fields()
     {
         var camera = CreateCamera(description: "   ", installationDate: null);

@@ -22,6 +22,12 @@ public class Team
 
     public Team(string name, int municipalAgencyId, string? description = null)
     {
+        Update(name, municipalAgencyId, description);
+        IsActive = true;
+    }
+
+    public void Update(string name, int municipalAgencyId, string? description)
+    {
         // O Domain só confere o formato; se o órgão existe, quem confere é o Application.
         if (municipalAgencyId <= 0)
             throw new DomainException("O órgão da prefeitura é obrigatório.");
@@ -29,7 +35,6 @@ public class Team
         Name = Guard.RequiredText(name, "nome", NameMaxLength);
         MunicipalAgencyId = municipalAgencyId;
         Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
-        IsActive = true;
     }
 
     // Desativar em vez de apagar preserva o histórico. Repetir a chamada não muda nada.

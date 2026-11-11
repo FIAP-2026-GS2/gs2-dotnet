@@ -1,12 +1,60 @@
+using System.Text.Json.Serialization;
+using Microsoft.OpenApi.Models;
+using SampaCuida.Api.Endpoints;
+using SampaCuida.Api.Errors;
+using SampaCuida.Application;
 using SampaCuida.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Erros padronizados (ProblemDetails) a partir de um único tratador global.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Enums como texto no JSON ("ACTIVE" em vez de 0), na API e no Swagger.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// "Relógio" injetável: nos testes dá para fixar o "agora".
+builder.Services.AddSingleton(TimeProvider.System);
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Sampa Cuida API",
+        Version = "v1",
+        Description = "Zeladoria urbana a partir das câmeras do Smart Sampa: câmeras, agendas de captura, " +
+                      "detecções da IA e ocorrências acompanhadas pela prefeitura e pelo cidadão."
+    }));
 
 var app = builder.Build();
 
-app.MapGet("/", () => Results.Ok(new { name = "Sampa Cuida API", status = "running" }));
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
+// Swagger sempre em Development; em produção (Azure), só com Swagger__Enabled=true.
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options => options.DocumentTitle = "Sampa Cuida API");
+}
+
+app.MapGet("/", () => Results.Ok(new { name = "Sampa Cuida API", status = "running" }))
+    .ExcludeFromDescription();
+
+app.MapMonitoringPointEndpoints();
+app.MapCameraEndpoints();
+app.MapCaptureScheduleEndpoints();
+app.MapMunicipalAgencyEndpoints();
+app.MapTeamEndpoints();
+app.MapIssueTypeEndpoints();
+app.MapTriggerEventEndpoints();
 
 app.Run();
 

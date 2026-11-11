@@ -28,12 +28,17 @@ public class MunicipalAgency
         string? description = null,
         string? subprefecture = null)
     {
+        Update(name, city, state, description, subprefecture);
+        IsActive = true;
+    }
+
+    public void Update(string name, string city, string state, string? description, string? subprefecture)
+    {
         Name = Guard.RequiredText(name, "nome", NameMaxLength);
         City = Guard.RequiredText(city, "cidade", CityMaxLength);
         State = Guard.StateCode(state);
         Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
         Subprefecture = Guard.OptionalText(subprefecture, "subprefeitura", SubprefectureMaxLength);
-        IsActive = true;
     }
 
     // Desativar em vez de apagar preserva o histórico. Repetir a chamada não muda nada.

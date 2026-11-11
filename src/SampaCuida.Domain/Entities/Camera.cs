@@ -1,6 +1,5 @@
 using SampaCuida.Domain.Common;
 using SampaCuida.Domain.Enums;
-using SampaCuida.Domain.Exceptions;
 
 namespace SampaCuida.Domain.Entities;
 
@@ -28,14 +27,18 @@ public class Camera
         string? description = null,
         DateOnly? installationDate = null)
     {
-        // O Domain só confere o formato; se o ponto existe, quem confere é o Application.
-        if (monitoringPointId <= 0)
-            throw new DomainException("O ponto monitorado é obrigatório.");
-
-        Code = Guard.RequiredText(code, "código", CodeMaxLength);
-        MonitoringPointId = monitoringPointId;
-        Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
-        InstallationDate = installationDate;
+        Update(code, monitoringPointId, description, installationDate);
         Status = CameraStatus.ACTIVE;
     }
+
+    // O Domain só confere o formato do id; se o ponto existe, quem confere é o Application.
+    public void Update(string code, int monitoringPointId, string? description, DateOnly? installationDate)
+    {
+        Code = Guard.RequiredText(code, "código", CodeMaxLength);
+        MonitoringPointId = Guard.RequiredId(monitoringPointId, "ponto monitorado");
+        Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
+        InstallationDate = installationDate;
+    }
+
+    public void ChangeStatus(CameraStatus status) => Status = Guard.DefinedEnum(status, "status");
 }

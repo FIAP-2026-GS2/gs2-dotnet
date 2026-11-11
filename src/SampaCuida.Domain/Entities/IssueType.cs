@@ -23,10 +23,15 @@ public class IssueType
 
     public IssueType(string name, IssueCategory category, string? description = null)
     {
+        Update(name, category, description);
+        IsActive = true;
+    }
+
+    public void Update(string name, IssueCategory category, string? description)
+    {
         Name = Guard.RequiredText(name, "nome", NameMaxLength);
         Category = Guard.DefinedEnum(category, "categoria");
         Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
-        IsActive = true;
     }
 
     // Desativar em vez de apagar preserva o histórico. Repetir a chamada não muda nada.

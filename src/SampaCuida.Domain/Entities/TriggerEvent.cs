@@ -43,6 +43,17 @@ public class TriggerEvent
         Status = TriggerEventStatus.ACTIVE;
     }
 
+    // Tipo e início não mudam depois de criado: só os dados descritivos.
+    public void UpdateDetails(string alertSource, string? description, string? intensity)
+    {
+        if (!IsActive)
+            throw new DomainException("Um evento encerrado não pode ser alterado.");
+
+        AlertSource = Guard.RequiredText(alertSource, "fonte do alerta", AlertSourceMaxLength);
+        Description = Guard.OptionalText(description, "descrição", DescriptionMaxLength);
+        Intensity = Guard.OptionalText(intensity, "intensidade", IntensityMaxLength);
+    }
+
     // Encerrar duas vezes é erro: a segunda chamada trocaria a data de fim já registrada.
     public void End(DateTime endDate)
     {
