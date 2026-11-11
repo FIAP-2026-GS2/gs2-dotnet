@@ -33,19 +33,25 @@ public class CaptureSchedule
         DateOnly? endDate = null,
         DayOfWeek? weekday = null)
     {
+        CameraId = Guard.RequiredId(cameraId, "câmera");
+        Update(executionTime, startDate, endDate, weekday);
+        IsActive = true;
+    }
+
+    // A câmera não muda: para outra câmera, cria-se outra agenda.
+    public void Update(TimeOnly executionTime, DateOnly startDate, DateOnly? endDate, DayOfWeek? weekday)
+    {
         if (executionTime != Noon && executionTime != Midnight)
             throw new DomainException("O horário da agenda deve ser 12:00 ou 00:00.");
 
         if (endDate < startDate)
             throw new DomainException("O fim da agenda não pode ser anterior ao início.");
 
-        CameraId = Guard.RequiredId(cameraId, "câmera");
         ExecutionTime = executionTime;
         StartDate = startDate;
         EndDate = endDate;
         // Sem dia da semana, a agenda vale para todos os dias.
         Weekday = weekday is null ? null : Guard.DefinedEnum(weekday.Value, "dia da semana");
-        IsActive = true;
     }
 
     // Desativar em vez de apagar preserva o histórico. Repetir a chamada não muda nada.
