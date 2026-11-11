@@ -61,6 +61,25 @@ public class ImageTests
     }
 
     [Fact]
+    public void Constructor_with_new_capture_links_navigation_for_saving_together()
+    {
+        var capture = Capture.FromSchedule(cameraId: 3, captureScheduleId: 7, Stored.AddMinutes(-1));
+
+        var image = new Image(capture, "frame.jpg", Url, isAnonymized: true, Stored);
+
+        Assert.Same(capture, image.Capture);
+        Assert.Equal(0, image.CaptureId);
+    }
+
+    [Fact]
+    public void Constructor_with_new_capture_keeps_privacy_rule()
+    {
+        var capture = Capture.FromSchedule(3, 7, Stored.AddMinutes(-1));
+
+        Assert.Throws<DomainException>(() => new Image(capture, "frame.jpg", Url, isAnonymized: false, Stored));
+    }
+
+    [Fact]
     public void Constructor_accepts_image_without_hash()
     {
         var image = CreateImage(fileHash: "  ");

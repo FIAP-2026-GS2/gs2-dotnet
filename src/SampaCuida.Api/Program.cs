@@ -2,13 +2,22 @@ using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using SampaCuida.Api.Endpoints;
 using SampaCuida.Api.Errors;
+using SampaCuida.Api.Idempotency;
 using SampaCuida.Application;
+using SampaCuida.Application.Analyses;
+using SampaCuida.Application.Schedules;
 using SampaCuida.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Regras configuráveis (appsettings): confiança mínima para uma detecção abrir ocorrência.
+builder.Services.Configure<DetectionOptions>(builder.Configuration.GetSection(DetectionOptions.SectionName));
+
+// Agenda: tolerância da janela, intervalo dos frames de chuva e fuso das regras de relógio.
+builder.Services.Configure<ScheduleOptions>(builder.Configuration.GetSection(ScheduleOptions.SectionName));
 
 // Erros padronizados (ProblemDetails) a partir de um único tratador global.
 builder.Services.AddProblemDetails();
@@ -25,13 +34,18 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
+{
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Sampa Cuida API",
         Version = "v1",
         Description = "Zeladoria urbana a partir das câmeras do Smart Sampa: câmeras, agendas de captura, " +
                       "detecções da IA e ocorrências acompanhadas pela prefeitura e pelo cidadão."
-    }));
+    });
+
+    // Mostra o header Idempotency-Key nas rotas idempotentes.
+    options.OperationFilter<IdempotencyHeaderOperationFilter>();
+});
 
 var app = builder.Build();
 
@@ -55,6 +69,9 @@ app.MapMunicipalAgencyEndpoints();
 app.MapTeamEndpoints();
 app.MapIssueTypeEndpoints();
 app.MapTriggerEventEndpoints();
+app.MapCaptureEndpoints();
+app.MapAnalysisEndpoints();
+app.MapDueScheduleEndpoints();
 
 app.Run();
 

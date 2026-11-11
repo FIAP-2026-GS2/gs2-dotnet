@@ -24,6 +24,7 @@ public class Image
     // Usado apenas pelo EF Core ao materializar registros do banco.
     private Image() { }
 
+    // Para uma captura que já existe no banco.
     public Image(
         int captureId,
         string fileName,
@@ -32,11 +33,29 @@ public class Image
         DateTime storageDate,
         string? fileHash = null)
     {
+        CaptureId = Guard.RequiredId(captureId, "captura");
+        SetFile(fileName, filePath, isAnonymized, storageDate, fileHash);
+    }
+
+    // Para uma captura nova: o EF grava as duas juntas e preenche o id da captura.
+    public Image(
+        Capture capture,
+        string fileName,
+        string filePath,
+        bool isAnonymized,
+        DateTime storageDate,
+        string? fileHash = null)
+    {
+        Capture = capture ?? throw new DomainException("A captura é obrigatória.");
+        SetFile(fileName, filePath, isAnonymized, storageDate, fileHash);
+    }
+
+    private void SetFile(string fileName, string filePath, bool isAnonymized, DateTime storageDate, string? fileHash)
+    {
         // Regra de privacidade: imagem sem anonimização nunca é armazenada.
         if (!isAnonymized)
             throw new DomainException("A imagem precisa estar anonimizada (rostos e placas borrados).");
 
-        CaptureId = Guard.RequiredId(captureId, "captura");
         FileName = Guard.RequiredText(fileName, "nome do arquivo", FileNameMaxLength);
         FilePath = HttpsUrl(filePath);
         StorageDate = Guard.Utc(storageDate, "armazenamento");
