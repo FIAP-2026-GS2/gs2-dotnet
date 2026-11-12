@@ -1,3 +1,4 @@
+using SampaCuida.Api.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Application.Auth;
 using SampaCuida.Application.Schedules;
@@ -13,7 +14,8 @@ public static class DueScheduleEndpoints
             .WithTags("Agendas de captura")
             .WithSummary("Lista os frames a extrair agora: agendas de 12:00/00:00 (horário de São Paulo) " +
                          "e alertas de chuva ativos. Use 'at' para simular outro horário.")
-            .RequireAuthorization(AuthPolicies.IaService);
+            .RequireAuthorization(AuthPolicies.IaService)
+            .RequireRateLimiting(RateLimitPolicies.IaService);
 
         return app;
     }
