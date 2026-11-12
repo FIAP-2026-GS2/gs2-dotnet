@@ -1,3 +1,4 @@
+using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Common.Paging;
@@ -9,8 +10,9 @@ public static class IssueReportEndpoints
 {
     public static IEndpointRouteBuilder MapIssueReportEndpoints(this IEndpointRouteBuilder app)
     {
-        // Rotas do gestor da prefeitura (protegidas por JWT na fase seguinte).
-        var group = app.MapGroup("/api/issue-reports").WithTags("Ocorrências (gestor)");
+        // Rotas da prefeitura: consultar exige VIEWER ou acima; mudar status e atribuir, MANAGER ou acima.
+        var group = app.MapGroup("/api/issue-reports").WithTags("Ocorrências (gestor)")
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/", List)
             .WithSummary("Lista as ocorrências com indicadores calculados (padrão: maior prioridade primeiro)")
@@ -21,11 +23,13 @@ public static class IssueReportEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/status", ChangeStatus)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Muda o status (IN_PROGRESS, RESOLVED ou REJECTED, este com motivo obrigatório)")
             .WithValidation<ChangeIssueStatusRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/{id:int}/assignments", Assign)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Atribui uma equipe ativa (OPEN) ou troca a equipe (ASSIGNED)")
             .WithValidation<CreateAssignmentRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -35,7 +39,8 @@ public static class IssueReportEndpoints
         app.MapGet("/api/public/issue-reports", ListPublic)
             .WithTags("Público (cidadão)")
             .WithSummary("Ocorrências para o cidadão acompanhar (sem dados internos; rejeitadas não aparecem)")
-            .WithValidation<PublicIssueReportQuery>();
+            .WithValidation<PublicIssueReportQuery>()
+            .AllowAnonymous();
 
         return app;
     }

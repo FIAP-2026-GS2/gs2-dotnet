@@ -19,6 +19,7 @@ public class GlobalExceptionHandler(
         {
             DomainException => (StatusCodes.Status400BadRequest, "Regra de negócio violada"),
             BadHttpRequestException bad => (bad.StatusCode, "Requisição inválida"),
+            UnauthorizedException => (StatusCodes.Status401Unauthorized, "Não autenticado"),
             NotFoundException => (StatusCodes.Status404NotFound, "Recurso não encontrado"),
             ConflictException => (StatusCodes.Status409Conflict, "Conflito com dados existentes"),
             _ => (StatusCodes.Status500InternalServerError, "Erro interno")

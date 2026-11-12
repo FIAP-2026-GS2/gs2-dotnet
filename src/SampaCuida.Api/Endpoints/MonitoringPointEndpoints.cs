@@ -1,3 +1,4 @@
+using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Common.Paging;
@@ -9,7 +10,8 @@ public static class MonitoringPointEndpoints
 {
     public static IEndpointRouteBuilder MapMonitoringPointEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/monitoring-points").WithTags("Pontos monitorados");
+        var group = app.MapGroup("/api/monitoring-points").WithTags("Pontos monitorados")
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/", List)
             .WithSummary("Lista os pontos monitorados (paginado, com filtro por bairro e cidade)")
@@ -20,16 +22,19 @@ public static class MonitoringPointEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", Create)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Cadastra um ponto monitorado")
             .WithValidation<MonitoringPointRequest>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapPut("/{id:int}", Update)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Atualiza um ponto monitorado")
             .WithValidation<MonitoringPointRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:int}", Delete)
+            .RequireAuthorization(AuthPolicies.Delete)
             .WithSummary("Remove um ponto monitorado (recusado com 409 se ainda tiver câmeras)")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);

@@ -1,3 +1,4 @@
+using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Common.Paging;
@@ -9,7 +10,8 @@ public static class TriggerEventEndpoints
 {
     public static IEndpointRouteBuilder MapTriggerEventEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/trigger-events").WithTags("Alertas de chuva");
+        var group = app.MapGroup("/api/trigger-events").WithTags("Alertas de chuva")
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/", List)
             .WithSummary("Lista os alertas (mais recentes primeiro, com filtro por status)")
@@ -20,21 +22,25 @@ public static class TriggerEventEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", Create)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Registra um alerta (sem data de início, vale o momento atual)")
             .WithValidation<CreateTriggerEventRequest>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapPut("/{id:int}", Update)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Atualiza fonte, descrição e intensidade de um alerta ativo")
             .WithValidation<UpdateTriggerEventRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/end", End)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Encerra um alerta (sem data de fim, vale o momento atual; encerrar duas vezes responde 400)")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapDelete("/{id:int}", Delete)
+            .RequireAuthorization(AuthPolicies.Delete)
             .WithSummary("Remove um alerta (recusado com 409 se já tiver gerado capturas)")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);

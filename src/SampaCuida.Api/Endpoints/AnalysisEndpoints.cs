@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Idempotency;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Analyses;
+using SampaCuida.Application.Auth;
 
 namespace SampaCuida.Api.Endpoints;
 
@@ -13,14 +14,16 @@ public static class AnalysisEndpoints
 
         group.MapGet("/{id:int}", GetById)
             .WithSummary("Busca uma análise com as suas detecções")
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization(AuthPolicies.Read);
 
         // Usada pelo serviço de IA. Abre ocorrências ou soma nas abertas (deduplicação).
         group.MapPost("/", Create)
             .WithSummary("Registra a análise de uma imagem e processa as detecções (exige o header Idempotency-Key)")
             .WithValidation<CreateAnalysisRequest>()
             .WithIdempotency<CreateAnalysisRequest>()
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .RequireAuthorization(AuthPolicies.IaService);
 
         return app;
     }

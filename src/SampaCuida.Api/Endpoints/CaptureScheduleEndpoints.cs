@@ -1,3 +1,4 @@
+using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.CaptureSchedules;
@@ -9,7 +10,8 @@ public static class CaptureScheduleEndpoints
 {
     public static IEndpointRouteBuilder MapCaptureScheduleEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/cameras/{cameraId:int}/schedules").WithTags("Agendas de captura");
+        var group = app.MapGroup("/api/cameras/{cameraId:int}/schedules").WithTags("Agendas de captura")
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/", List)
             .WithSummary("Lista as agendas de uma câmera")
@@ -20,24 +22,29 @@ public static class CaptureScheduleEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", Create)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Cria uma agenda (12:00:00 ou 00:00:00, horário de São Paulo; sem dia da semana = todo dia)")
             .WithValidation<CaptureScheduleRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPut("/{id:int}", Update)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Atualiza uma agenda da câmera")
             .WithValidation<CaptureScheduleRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/activate", Activate)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Reativa uma agenda")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/deactivate", Deactivate)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Desativa uma agenda (para de gerar capturas, mas preserva o histórico)")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:int}", Delete)
+            .RequireAuthorization(AuthPolicies.Delete)
             .WithSummary("Remove uma agenda (recusado com 409 se já tiver gerado capturas)")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
