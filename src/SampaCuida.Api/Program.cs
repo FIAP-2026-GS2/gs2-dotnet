@@ -4,6 +4,7 @@ using SampaCuida.Api.Auth;
 using SampaCuida.Api.Endpoints;
 using SampaCuida.Api.Errors;
 using SampaCuida.Api.Idempotency;
+using SampaCuida.Api.RateLimiting;
 using SampaCuida.Application;
 using SampaCuida.Application.Analyses;
 using SampaCuida.Application.Schedules;
@@ -31,6 +32,9 @@ builder.Services.Configure<ScheduleOptions>(builder.Configuration.GetSection(Sch
 
 // JWT: validação do token, papéis em escada (ADMIN › MANAGER › VIEWER, e IA_SERVICE) e proteção por padrão.
 builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// Limite de requisições (429): login, serviço de IA, rota pública e um limite geral para o resto.
+builder.Services.AddApiRateLimiting(builder.Configuration);
 
 // Erros padronizados (ProblemDetails) a partir de um único tratador global.
 builder.Services.AddProblemDetails();
@@ -69,9 +73,15 @@ builder.Services.AddSwaggerGen(options =>
 
     // Mostra o header Idempotency-Key nas rotas idempotentes.
     options.OperationFilter<IdempotencyHeaderOperationFilter>();
+
+    // Documenta o 429 nas rotas com limite de requisições.
+    options.OperationFilter<TooManyRequestsOperationFilter>();
 });
 
 var app = builder.Build();
+
+// Primeiro de tudo: lê o IP real do cliente quando a API está atrás do balanceador do Azure.
+app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -83,7 +93,9 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger
     app.UseSwaggerUI(options => options.DocumentTitle = "Sampa Cuida API");
 }
 
+// Ordem importa: autenticar antes de limitar (a cota é por usuário) e limitar antes de autorizar.
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapGet("/", () => Results.Ok(new { name = "Sampa Cuida API", status = "running" }))

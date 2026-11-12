@@ -1,3 +1,4 @@
+using SampaCuida.Api.RateLimiting;
 using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
@@ -40,7 +41,8 @@ public static class IssueReportEndpoints
             .WithTags("Público (cidadão)")
             .WithSummary("Ocorrências para o cidadão acompanhar (sem dados internos; rejeitadas não aparecem)")
             .WithValidation<PublicIssueReportQuery>()
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.Public);
 
         return app;
     }

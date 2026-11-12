@@ -1,3 +1,4 @@
+using SampaCuida.Api.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Auth;
@@ -13,7 +14,8 @@ public static class AuthEndpoints
             .WithSummary("Faz login e devolve o token JWT (válido por 60 minutos)")
             .WithValidation<LoginRequest>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.Login);
 
         return app;
     }

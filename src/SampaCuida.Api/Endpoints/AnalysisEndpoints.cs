@@ -1,3 +1,4 @@
+using SampaCuida.Api.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Idempotency;
 using SampaCuida.Api.Validation;
@@ -23,7 +24,8 @@ public static class AnalysisEndpoints
             .WithValidation<CreateAnalysisRequest>()
             .WithIdempotency<CreateAnalysisRequest>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
-            .RequireAuthorization(AuthPolicies.IaService);
+            .RequireAuthorization(AuthPolicies.IaService)
+            .RequireRateLimiting(RateLimitPolicies.IaService);
 
         return app;
     }
