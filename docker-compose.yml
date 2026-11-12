@@ -1,7 +1,7 @@
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sampa-cuida-sql
+    container_name: sampatech-sql
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
