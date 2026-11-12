@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using SampaTech.Api.Auth;
 using SampaTech.Api.Endpoints;
 using SampaTech.Api.Errors;
+using SampaTech.Api.HealthChecks;
 using SampaTech.Api.Idempotency;
 using SampaTech.Api.RateLimiting;
 using SampaTech.Application;
@@ -10,6 +11,7 @@ using SampaTech.Application.Analyses;
 using SampaTech.Application.Schedules;
 using SampaTech.Infrastructure;
 using SampaTech.Infrastructure.Auth;
+using SampaTech.Infrastructure.HealthChecks;
 
 // Ferramenta de linha de comando para gerar o hash de uma senha (a senha nunca fica em texto):
 //   dotnet run --project src/SampaTech.Api -- hash-password 'minha senha'
@@ -32,6 +34,9 @@ builder.Services.Configure<ScheduleOptions>(builder.Configuration.GetSection(Sch
 
 // JWT: validação do token, papéis em escada (ADMIN › MANAGER › VIEWER, e IA_SERVICE) e proteção por padrão.
 builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// Health checks: banco sempre; serviço de IA, Blob e RabbitMQ só se estiverem configurados.
+builder.Services.AddInfrastructureHealthChecks(builder.Configuration);
 
 // Limite de requisições (429): login, serviço de IA, rota pública e um limite geral para o resto.
 builder.Services.AddApiRateLimiting(builder.Configuration);
@@ -101,6 +106,9 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Ok(new { name = "SampaTech API", status = "running" }))
     .ExcludeFromDescription()
     .AllowAnonymous();
+
+// /health/live (pulso) e /health (banco e serviços externos): sem login e sem limite de requisições.
+app.MapHealthEndpoints();
 
 app.MapAuthEndpoints();
 app.MapMonitoringPointEndpoints();
