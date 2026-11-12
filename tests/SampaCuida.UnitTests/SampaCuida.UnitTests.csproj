@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="8.10.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
@@ -23,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SampaCuida.Domain\SampaCuida.Domain.csproj" />
     <ProjectReference Include="..\..\src\SampaCuida.Application\SampaCuida.Application.csproj" />
+    <ProjectReference Include="..\..\src\SampaCuida.Infrastructure\SampaCuida.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
