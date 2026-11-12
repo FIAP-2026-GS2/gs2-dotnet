@@ -1,3 +1,4 @@
+using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Common.Paging;
@@ -9,7 +10,8 @@ public static class MunicipalAgencyEndpoints
 {
     public static IEndpointRouteBuilder MapMunicipalAgencyEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/municipal-agencies").WithTags("Órgãos da prefeitura");
+        var group = app.MapGroup("/api/municipal-agencies").WithTags("Órgãos da prefeitura")
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/", List)
             .WithSummary("Lista os órgãos (paginado, com filtro por ativo)")
@@ -20,24 +22,29 @@ public static class MunicipalAgencyEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", Create)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Cadastra um órgão")
             .WithValidation<MunicipalAgencyRequest>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapPut("/{id:int}", Update)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Atualiza um órgão")
             .WithValidation<MunicipalAgencyRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/activate", Activate)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Reativa um órgão")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/deactivate", Deactivate)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Desativa um órgão (preserva o histórico)")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:int}", Delete)
+            .RequireAuthorization(AuthPolicies.Delete)
             .WithSummary("Remove um órgão (recusado com 409 se ainda tiver equipes)")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);

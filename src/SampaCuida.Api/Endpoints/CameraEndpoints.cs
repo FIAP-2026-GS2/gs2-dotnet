@@ -1,3 +1,4 @@
+using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Cameras;
@@ -9,7 +10,8 @@ public static class CameraEndpoints
 {
     public static IEndpointRouteBuilder MapCameraEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/cameras").WithTags("Câmeras");
+        var group = app.MapGroup("/api/cameras").WithTags("Câmeras")
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/", List)
             .WithSummary("Lista as câmeras (paginado, com filtro por ponto e status)")
@@ -20,18 +22,21 @@ public static class CameraEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", Create)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Cadastra uma câmera (o código é único: repetido responde 409)")
             .WithValidation<CreateCameraRequest>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:int}", Update)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Atualiza uma câmera, inclusive o status")
             .WithValidation<UpdateCameraRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapDelete("/{id:int}", Delete)
+            .RequireAuthorization(AuthPolicies.Delete)
             .WithSummary("Remove uma câmera (recusado com 409 se ela já tiver agendas ou capturas)")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);

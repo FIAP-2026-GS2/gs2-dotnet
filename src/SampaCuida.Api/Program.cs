@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
+using SampaCuida.Api.Auth;
 using SampaCuida.Api.Endpoints;
 using SampaCuida.Api.Errors;
 using SampaCuida.Api.Idempotency;
@@ -7,6 +8,15 @@ using SampaCuida.Application;
 using SampaCuida.Application.Analyses;
 using SampaCuida.Application.Schedules;
 using SampaCuida.Infrastructure;
+using SampaCuida.Infrastructure.Auth;
+
+// Ferramenta de linha de comando para gerar o hash de uma senha (a senha nunca fica em texto):
+//   dotnet run --project src/SampaCuida.Api -- hash-password 'minha senha'
+if (args is ["hash-password", var password])
+{
+    Console.WriteLine(PasswordHashing.Hash(password));
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +28,9 @@ builder.Services.Configure<DetectionOptions>(builder.Configuration.GetSection(De
 
 // Agenda: tolerância da janela, intervalo dos frames de chuva e fuso das regras de relógio.
 builder.Services.Configure<ScheduleOptions>(builder.Configuration.GetSection(ScheduleOptions.SectionName));
+
+// JWT: validação do token, papéis em escada (ADMIN › MANAGER › VIEWER, e IA_SERVICE) e proteção por padrão.
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // Erros padronizados (ProblemDetails) a partir de um único tratador global.
 builder.Services.AddProblemDetails();
@@ -40,8 +53,19 @@ builder.Services.AddSwaggerGen(options =>
         Title = "Sampa Cuida API",
         Version = "v1",
         Description = "Zeladoria urbana a partir das câmeras do Smart Sampa: câmeras, agendas de captura, " +
-                      "detecções da IA e ocorrências acompanhadas pela prefeitura e pelo cidadão."
+                      "detecções da IA e ocorrências acompanhadas pela prefeitura e pelo cidadão. " +
+                      "Faça login em POST /api/auth/login e cole o token no botão Authorize."
     });
+
+    // Botão "Authorize" para colar o token, e cadeado só nas rotas protegidas.
+    options.AddSecurityDefinition(AuthorizeOperationFilter.SchemeName, new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Cole só o token (sem a palavra Bearer)."
+    });
+    options.OperationFilter<AuthorizeOperationFilter>();
 
     // Mostra o header Idempotency-Key nas rotas idempotentes.
     options.OperationFilter<IdempotencyHeaderOperationFilter>();
@@ -59,9 +83,14 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger
     app.UseSwaggerUI(options => options.DocumentTitle = "Sampa Cuida API");
 }
 
-app.MapGet("/", () => Results.Ok(new { name = "Sampa Cuida API", status = "running" }))
-    .ExcludeFromDescription();
+app.UseAuthentication();
+app.UseAuthorization();
 
+app.MapGet("/", () => Results.Ok(new { name = "Sampa Cuida API", status = "running" }))
+    .ExcludeFromDescription()
+    .AllowAnonymous();
+
+app.MapAuthEndpoints();
 app.MapMonitoringPointEndpoints();
 app.MapCameraEndpoints();
 app.MapCaptureScheduleEndpoints();

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Idempotency;
 using SampaCuida.Api.Validation;
+using SampaCuida.Application.Auth;
 using SampaCuida.Application.Captures;
 using SampaCuida.Application.Common.Paging;
 
@@ -14,11 +15,13 @@ public static class CaptureEndpoints
 
         group.MapGet("/", List)
             .WithSummary("Lista as capturas (mais recentes primeiro, com filtros por câmera, origem, status e período)")
-            .WithValidation<CaptureQuery>();
+            .WithValidation<CaptureQuery>()
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/{id:int}", GetById)
             .WithSummary("Busca uma captura com as suas imagens")
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization(AuthPolicies.Read);
 
         // Usada pelo serviço de IA. Idempotente: repetir o envio com a mesma Idempotency-Key
         // devolve a resposta original sem gravar de novo.
@@ -26,7 +29,8 @@ public static class CaptureEndpoints
             .WithSummary("Registra uma captura com a imagem anonimizada (exige o header Idempotency-Key)")
             .WithValidation<CreateCaptureRequest>()
             .WithIdempotency<CreateCaptureRequest>()
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .RequireAuthorization(AuthPolicies.IaService);
 
         return app;
     }

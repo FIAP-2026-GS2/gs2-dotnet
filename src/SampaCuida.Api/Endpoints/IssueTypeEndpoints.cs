@@ -1,3 +1,4 @@
+using SampaCuida.Application.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using SampaCuida.Api.Validation;
 using SampaCuida.Application.Common.Paging;
@@ -9,7 +10,8 @@ public static class IssueTypeEndpoints
 {
     public static IEndpointRouteBuilder MapIssueTypeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/issue-types").WithTags("Tipos de problema");
+        var group = app.MapGroup("/api/issue-types").WithTags("Tipos de problema")
+            .RequireAuthorization(AuthPolicies.Read);
 
         group.MapGet("/", List)
             .WithSummary("Lista os tipos de problema (paginado, com filtro por categoria e ativo)")
@@ -20,25 +22,30 @@ public static class IssueTypeEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", Create)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Cadastra um tipo de problema (o nome é único: repetido responde 409)")
             .WithValidation<IssueTypeRequest>()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:int}", Update)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Atualiza um tipo de problema")
             .WithValidation<IssueTypeRequest>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPatch("/{id:int}/activate", Activate)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Reativa um tipo de problema")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/deactivate", Deactivate)
+            .RequireAuthorization(AuthPolicies.Manage)
             .WithSummary("Desativa um tipo de problema (preserva o histórico)")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:int}", Delete)
+            .RequireAuthorization(AuthPolicies.Delete)
             .WithSummary("Remove um tipo de problema (recusado com 409 se já estiver em uso)")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);

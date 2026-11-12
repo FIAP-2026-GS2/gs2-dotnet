@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using SampaCuida.Application.Auth;
 using SampaCuida.Application.Schedules;
 
 namespace SampaCuida.Api.Endpoints;
@@ -11,7 +12,8 @@ public static class DueScheduleEndpoints
         app.MapGet("/api/schedules/due", ListDue)
             .WithTags("Agendas de captura")
             .WithSummary("Lista os frames a extrair agora: agendas de 12:00/00:00 (horário de São Paulo) " +
-                         "e alertas de chuva ativos. Use 'at' para simular outro horário.");
+                         "e alertas de chuva ativos. Use 'at' para simular outro horário.")
+            .RequireAuthorization(AuthPolicies.IaService);
 
         return app;
     }

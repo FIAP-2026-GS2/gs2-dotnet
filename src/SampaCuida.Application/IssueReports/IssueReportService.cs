@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SampaCuida.Application.Abstractions;
+using SampaCuida.Application.Auth;
 using SampaCuida.Application.Common.Exceptions;
 using SampaCuida.Application.Common.Paging;
 using SampaCuida.Domain.Entities;
@@ -17,7 +18,8 @@ public interface IIssueReportService
     Task<PagedResponse<PublicIssueReportResponse>> ListPublicAsync(PublicIssueReportQuery query, CancellationToken cancellationToken);
 }
 
-public class IssueReportService(IAppDbContext db, TimeProvider timeProvider) : IIssueReportService
+public class IssueReportService(IAppDbContext db, TimeProvider timeProvider, ICurrentUser currentUser)
+    : IIssueReportService
 {
     private readonly IssueReportReader _reader = new(db);
 
@@ -66,7 +68,8 @@ public class IssueReportService(IAppDbContext db, TimeProvider timeProvider) : I
     {
         var report = await LoadAggregateAsync(id, cancellationToken);
 
-        report.ChangeStatus(request.Status!.Value, Now(), request.Notes);
+        // O usuário do token fica registrado no histórico (auditoria: quem mudou o status).
+        report.ChangeStatus(request.Status!.Value, Now(), request.Notes, currentUser.UserId);
 
         await db.SaveChangesAsync(cancellationToken);
         return await DetailAsync(id, cancellationToken);
@@ -86,9 +89,9 @@ public class IssueReportService(IAppDbContext db, TimeProvider timeProvider) : I
             throw new DomainException($"A equipe {teamId} está desativada.");
 
         if (report.Status == IssueStatus.ASSIGNED)
-            report.Reassign(teamId, Now());
+            report.Reassign(teamId, Now(), currentUser.UserId);
         else
-            report.AssignTo(teamId, Now());
+            report.AssignTo(teamId, Now(), currentUser.UserId);
 
         await db.SaveChangesAsync(cancellationToken);
         return await DetailAsync(id, cancellationToken);
