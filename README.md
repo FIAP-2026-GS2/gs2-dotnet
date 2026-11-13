@@ -17,27 +17,13 @@ análises da IA, abertura e deduplicação de ocorrências, fluxo de atendimento
 
 ## Arquitetura
 
-```mermaid
-flowchart LR
-    CAM["Câmeras Smart Sampa"] --> IA["Serviço de IA<br/>Python · FastAPI"]
-    IA -- "frames anonimizados" --> BLOB[("Azure Blob Storage")]
-    IA -- "GET /api/schedules/due<br/>POST /api/captures · /api/analyses<br/>(JWT IA_SERVICE)" --> API["API SampaTech<br/>.NET 8 · Minimal API"]
-    API --> DB[("Azure SQL")]
-    PREF["Prefeitura<br/>ADMIN · MANAGER · VIEWER"] -- "JWT" --> API
-    CID["Cidadão"] -- "GET /api/public/issue-reports<br/>(sem login)" --> API
-    CID -.-> JAVA["API Java<br/>(app do cidadão)"]
-```
+![Arquitetura do SampaTech: câmeras, serviço de IA, API .NET, Azure SQL, Blob Storage, prefeitura, cidadão e as camadas da API](docs/arquitetura.png)
 
-O código segue **Clean Architecture** em quatro projetos. As setas indicam quem depende de quem; o domínio não
-depende de ninguém.
+O desenho é gerado a partir de [`docs/arquitetura.html`](docs/arquitetura.html), com os ícones oficiais do Azure,
+do .NET, do Python e do FastAPI.
 
-```mermaid
-flowchart LR
-    Api["SampaTech.Api<br/>rotas, filtros, Swagger"] --> Application
-    Api --> Infrastructure
-    Infrastructure["SampaTech.Infrastructure<br/>EF Core, migrations, JWT, health checks"] --> Application
-    Application["SampaTech.Application<br/>casos de uso, DTOs, validações"] --> Domain["SampaTech.Domain<br/>entidades e regras"]
-```
+O código segue **Clean Architecture** em quatro projetos (faixa roxa do desenho): as setas indicam quem depende
+de quem, e o domínio não depende de ninguém.
 
 | Projeto | Responsabilidade |
 |---|---|
