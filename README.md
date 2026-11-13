@@ -223,10 +223,12 @@ dotnet test SampaTech.sln
 - Todo o código foi revisado e commitado pelo autor, em PRs por funcionalidade.
 - 252 testes automatizados (221 unitários e 31 de integração com SQL Server real).
 
-## Equipe
+## Integrantes
 
-| Nome | Responsabilidade |
+| Nome | RM |
 |---|---|
-| Matheus Moya de Oliveira | API .NET, serviço de IA (Python) e Cloud |
-| <!-- preencher --> | API Java |
-| <!-- preencher --> | |
+| Ana Carolina Pereira Fontes | 562145 |
+| João Victor Nascimento Adão | 563409 |
+| Johnny Dias Mathias Junior | 566516 |
+| Luisa Ganasevici de Abreu | 563403 |
+| Matheus Moya de Oliveira | 562822 |
