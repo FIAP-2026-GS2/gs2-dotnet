@@ -75,7 +75,8 @@ Gere o hash de uma senha (a senha em si nunca é guardada):
 dotnet run --project src/SampaTech.Api -- hash-password "MinhaSenha@123"
 ```
 
-E cadastre o usuário com o hash gerado (repita com os índices 1, 2… para outros usuários e papéis):
+Copie só a linha do hash (começa com `AQAAAA`); na primeira execução aparece antes a linha `Compilando...`,
+que não faz parte dele. E cadastre o usuário com o hash gerado (repita com os índices 1, 2… para outros usuários e papéis):
 
 ```bash
 dotnet user-secrets set "Auth:Users:0:Username" "admin" --project src/SampaTech.Api
@@ -225,10 +226,10 @@ dotnet test SampaTech.sln
 
 ## Integrantes
 
-| Nome | RM |
-|---|---|
-| Ana Carolina Pereira Fontes | 562145 |
-| João Victor Nascimento Adão | 563409 |
-| Johnny Dias Mathias Junior | 566516 |
-| Luisa Ganasevici de Abreu | 563403 |
-| Matheus Moya de Oliveira | 562822 |
+| Nome | RM | Turma |
+|---|---|---|
+| Ana Carolina Pereira Fontes | RM562145 | 2TDSPV |
+| João Victor Nascimento Adão | RM563409 | 2TDSPX |
+| Johnny Dias Mathias Junior | RM566516 | 2TDSPX |
+| Luisa Ganasevici de Abreu | RM563403 | 2TDSPV |
+| Matheus Moya de Oliveira | RM562822 | 2TDSPV |
