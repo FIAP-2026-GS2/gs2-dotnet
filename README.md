@@ -48,13 +48,26 @@ JWT, FluentValidation, Swagger, xUnit, WebApplicationFactory, Testcontainers e R
 cp .env.example .env
 ```
 
-Abra o `.env` e troque a senha (8+ caracteres, com maiúscula, minúscula, número e símbolo). Depois:
+Abra o `.env` e preencha `MSSQL_SA_PASSWORD` **antes de subir o banco**:
+
+- mínimo de **8 caracteres** e **3 destes 4 tipos**: maiúscula, minúscula, número e símbolo (regra do SQL Server;
+  recomendado: 12 ou mais, com os 4 tipos), por exemplo `Sampa#Local2026`;
+- evite `$`, aspas, `;` e espaço, que atrapalham os comandos;
+- o SQL Server só lê essa senha **na primeira vez** que cria o volume. Para trocá-la depois, veja
+  [Problemas comuns](#problemas-comuns).
+
+Se o campo ficar vazio, o Docker Compose para com a mensagem `Defina MSSQL_SA_PASSWORD no arquivo .env`. Depois de
+preencher:
 
 ```bash
 docker compose up -d
 ```
 
-Espere o container ficar `(healthy)` em `docker ps` (cerca de 30 segundos).
+Espere o container ficar `(healthy)` antes de seguir (cerca de 30 segundos):
+
+```bash
+docker ps --format "{{.Names}}  {{.Status}}"
+```
 
 **2. Configuração da API**
 
@@ -120,6 +133,18 @@ dotnet test SampaTech.sln
 
 Os testes de integração precisam do Docker ligado: eles sobem um SQL Server próprio, descartável, e não usam o
 seu banco nem os seus segredos.
+
+### Problemas comuns
+
+| Sintoma | Causa | Solução |
+|---|---|---|
+| `docker compose up` para com `Defina MSSQL_SA_PASSWORD no arquivo .env` | A senha do `.env` está vazia | Preencha `MSSQL_SA_PASSWORD` no `.env` (passo 1). |
+| O container não fica `(healthy)` e `docker logs sampatech-sql` mostra `Password validation failed` | Senha fraca para o SQL Server | Use 8+ caracteres com 3 dos 4 tipos e recrie: `docker compose down -v && docker compose up -d`. |
+| `Login failed for user 'sa'` no `dotnet ef database update` ou na API | A senha da connection string não é a que o SQL guardou. Acontece quando o `.env` muda depois da primeira subida (o SQL só lê a senha ao criar o volume) ou quando o terminal tem uma variável `MSSQL_SA_PASSWORD` definida, que passa na frente do `.env` | Confira se a senha da connection string é a mesma do `.env`. Rode `unset MSSQL_SA_PASSWORD` e recrie o banco local: `docker compose down -v && docker compose up -d` (apaga os dados locais). |
+| `A connection was successfully established with the server, but then an error occurred during the pre-login handshake` | O SQL Server ainda está ligando | Espere o `(healthy)` em `docker ps` e rode de novo. |
+| Login da API responde `401` com a senha certa | O hash foi copiado com a linha `Compilando...` | Gere de novo com `hash-password` e copie só a linha que começa com `AQAAAA`. |
+| A API não sobe e diz qual `Auth:Users` corrigir | Papel inexistente, hash vazio ou usuário repetido | Use os papéis `ADMIN`, `MANAGER`, `VIEWER` ou `IA_SERVICE` e corrija a posição indicada. |
+| `dotnet ef` não é reconhecido | A ferramenta local não foi restaurada | Rode `dotnet tool restore` na raiz do repositório. |
 
 ## Autenticação e papéis
 
