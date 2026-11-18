@@ -13,7 +13,7 @@ using SampaTech.IntegrationTests.Infrastructure;
 namespace SampaTech.IntegrationTests;
 
 /// <summary>Cidadão confirma ou contesta o conserto com foto; a equipe aprova ou recusa.</summary>
-public class CitizenFeedbackTests(ApiFactory factory) : ApiTest(factory)
+public partial class CitizenFeedbackTests(ApiFactory factory) : ApiTest(factory)
 {
     private static readonly DateTimeOffset Noon = new(2026, 11, 10, 15, 0, 0, TimeSpan.Zero);
 
