@@ -35,7 +35,7 @@ de quem, e o domínio não depende de ninguém.
 | `src/SampaTech.Infrastructure` | EF Core com SQL Server, migrations, login e token JWT, idempotência, health checks, chamada à IA para borrar fotos e Blob Storage. |
 | `src/SampaTech.Api` | Rotas Minimal API, autenticação, rate limiting, tratamento global de erros e Swagger. |
 | `tests/SampaTech.UnitTests` | 247 testes de domínio, validações, JWT, configuração e cliente da IA. |
-| `tests/SampaTech.IntegrationTests` | 46 testes da API inteira contra um SQL Server real em container. |
+| `tests/SampaTech.IntegrationTests` | 54 testes da API inteira contra um SQL Server real em container. |
 
 **Stack:** .NET 8, ASP.NET Core Minimal API, EF Core 8, SQL Server (Azure SQL na nuvem, Docker no local),
 JWT, FluentValidation, Swagger, Azure Blob Storage (Azurite no local), xUnit, WebApplicationFactory,
@@ -127,6 +127,13 @@ dotnet user-secrets set "AiService:ApiKey" "<IA_API_KEY do serviço de IA>" --pr
 
 Sem o serviço de IA no ar, o envio da foto responde `503` e nada é guardado; o resto da API funciona normalmente.
 
+Para o app do cidadão usar o login da API Java (opcional), configure o mesmo `JWT_SECRET` dela. Sem essa chave,
+a API sobe normalmente e só não aceita tokens da Java:
+
+```bash
+dotnet user-secrets set "JavaAuth:Secret" "<JWT_SECRET da API Java>" --project src/SampaTech.Api
+```
+
 **3. Tabelas (migrations)**
 
 ```bash
@@ -164,10 +171,11 @@ seu banco nem os seus segredos.
 | `Login failed for user 'sa'` no `dotnet ef database update` ou na API | A senha da connection string não é a que o SQL guardou. Acontece quando o `.env` muda depois da primeira subida (o SQL só lê a senha ao criar o volume) ou quando o terminal tem uma variável `MSSQL_SA_PASSWORD` definida, que passa na frente do `.env` | Confira se a senha da connection string é a mesma do `.env`. Rode `unset MSSQL_SA_PASSWORD` e recrie o banco local: `docker compose down -v && docker compose up -d` (apaga os dados locais). |
 | `A connection was successfully established with the server, but then an error occurred during the pre-login handshake` | O SQL Server ainda está ligando | Espere o `(healthy)` em `docker ps` e rode de novo. |
 | Login da API responde `401` com a senha certa | O hash foi copiado com a linha `Compilando...` | Gere de novo com `hash-password` e copie só a linha que começa com `AQAAAA`. |
-| A API não sobe e diz qual `Auth:Users` corrigir | Papel inexistente, hash vazio ou usuário repetido | Use os papéis `ADMIN`, `MANAGER`, `VIEWER` ou `IA_SERVICE` e corrija a posição indicada. |
+| A API não sobe e diz qual `Auth:Users` corrigir | Papel inexistente, hash vazio ou usuário repetido | Use os papéis `ADMIN`, `MANAGER`, `VIEWER`, `IA_SERVICE` ou `CITIZEN` e corrija a posição indicada. |
 | `dotnet ef` não é reconhecido | A ferramenta local não foi restaurada | Rode `dotnet tool restore` na raiz do repositório. |
 | Envio da foto responde `503` "O serviço de IA..." | O serviço de IA está desligado, sem `AiService:BaseUrl`, com `AiService:ApiKey` diferente da `IA_API_KEY` dele, ou sem o LLM configurado lá (variáveis `LLM_*`) | Suba o serviço de IA e confira as configurações. A primeira foto demora alguns segundos (os modelos carregam). |
 | Envio da foto responde `422` "Foto recusada pela IA" | A IA conferiu a foto e ela não mostra o local da ocorrência (ex.: selfie, animal, print de tela); o motivo vem no `detail` | Comportamento esperado: mande uma foto da rua. Nada foi guardado. |
+| Token da API Java responde `401` | `JavaAuth:Secret` diferente do `JWT_SECRET` da Java, token vencido (120 min) ou papel que não é `CITIZEN` | Confira o segredo (precisa ser idêntico) e faça login de novo na Java. `AGENT` e `ADMIN` da Java não entram na .NET, de propósito. |
 | Envio da foto responde `503` "O armazenamento de fotos..." | O Azurite (ou a Storage Account) não está no ar | Rode `docker compose up -d` e confira o `sampatech-azurite` em `docker ps`. |
 
 ## Autenticação e papéis
@@ -184,8 +192,16 @@ login; só o login, a consulta pública e os health checks são abertos.
 | `CITIZEN` | Confirmar ou contestar, com foto, o conserto de uma ocorrência e acompanhar os próprios relatos | Cidadão (app mobile) |
 
 Os papéis da prefeitura formam uma escada (`ADMIN › MANAGER › VIEWER`); o serviço de IA e o cidadão são separados
-e não acessam as rotas da prefeitura. Na demonstração, o cidadão é um usuário de configuração da própria API; na
-integração, a API passa a aceitar o token emitido pela API Java para o papel `CITIZEN`, sem mudar a rota.
+e não acessam as rotas da prefeitura. O cidadão entra de dois jeitos, nas mesmas rotas:
+
+- **Token da API Java** (o app do cidadão): a .NET confere a assinatura com o mesmo `JWT_SECRET` da Java
+  (`JavaAuth:Secret`) e a validade (120 min). O token da Java não tem emissor nem público, então a API olha o
+  token antes de validar: com o emissor da .NET, vai para o validador da .NET; sem emissor, para o da Java.
+  Da Java, **só o papel `CITIZEN` passa**: `AGENT` e `ADMIN` recebem `401`, e o cidadão não acessa as rotas da
+  prefeitura (`403`). O e-mail (`sub`) vira um código (`java:` + SHA-256 do e-mail): o mesmo cidadão sempre
+  tem o mesmo código e vê só os próprios relatos, mas o e-mail não é gravado na .NET.
+- **Usuário de configuração da própria API** (ex.: `cidadao-demo`): para a demonstração e como plano B se a
+  API Java estiver fora do ar.
 
 ## Rotas
 
@@ -253,6 +269,7 @@ do ar, ou serviço de IA e armazenamento indisponíveis no envio da foto).
 | **Banco** | Nomes de tabelas e colunas iguais ao modelo relacional do grupo; índices únicos filtrados (captura por câmera e horário; uma atribuição aberta por ocorrência). | O banco segue o modelo relacional definido pelo grupo, e as regras de unicidade ficam garantidas pelo banco, não só pelo código. |
 | **Fotos do cidadão** | A API recebe o arquivo, confere o formato pelos bytes (não pela extensão), pede ao serviço de IA para borrar e conferir a foto (`POST /verificar-foto`, com o tipo do problema e a decisão) e guarda só a versão borrada num container **privado** do Blob. A foto sai só por `GET /api/citizen-feedback/{id}/photo`, com login. Tabela nova `CITIZEN_FEEDBACK` (fora do DER original, avisada ao grupo). | A promessa de privacidade vale também para as fotos do app: sem a IA, nada é guardado (`503`). A conferência barra fotos que não servem como prova antes de chegarem à equipe (`422`), e a decisão final continua humana. O relato precisa de um ciclo próprio (pendente, aprovado, recusado) e de contagem, o que não cabe no histórico. |
 | **Datas** | Instantes gravados em UTC; regras de relógio (12:00, 00:00) no fuso `America/Sao_Paulo`. | Evita erro de fuso entre o servidor na nuvem e o horário da cidade. |
+| **Login do cidadão pela API Java** | A .NET aceita o token da Java só para o papel `CITIZEN`, com um validador próprio (sem emissor e público, que a Java não envia) escolhido pela presença do emissor no token, e grava um código derivado do e-mail no lugar dele. | O cidadão entra uma vez só no app, sem cadastro duplicado. Restringir o papel impede que um `ADMIN` da Java vire `ADMIN` na .NET, e o código cumpre a minimização de dados (LGPD): a .NET só precisa saber que é a mesma pessoa. |
 | **Segredos** | Senhas guardadas só como hash (PBKDF2); chave JWT e connection strings no user-secrets (local) ou em variáveis de ambiente (Azure). | Nenhuma credencial no repositório, que é público. |
 
 ## Testes
@@ -265,7 +282,7 @@ dotnet test SampaTech.sln
   reabertura), validações, login e token, validação dos usuários na subida, registro dos health checks, formato
   da foto e o cliente do serviço de IA (aceite, recusa com motivo, resposta fora do contrato, fora do ar e erro
   viram `503`).
-- **Integração (46):** a API inteira em memória (`WebApplicationFactory`) contra um **SQL Server real** em
+- **Integração (54):** a API inteira em memória (`WebApplicationFactory`) contra um **SQL Server real** em
   container (Testcontainers), com o banco limpo antes de cada teste (Respawn). Cobrem:
   - segurança: `401` sem token ou com token adulterado, `403` por papel;
   - CRUD de câmeras: `201`, `404`, `409`, `400` com o campo;
@@ -276,7 +293,10 @@ dotnet test SampaTech.sln
   - relato do cidadão: envio com foto, aprovação (validada por N cidadãos), contestação que reabre, recusa com
     motivo, `409` em ocorrência não resolvida, `401` e `403`, `400`, `413`, foto recusada pela IA (`422` sem gravar
     nada), o tipo do problema e a decisão enviados à IA, IA fora do ar (`503` sem gravar nada),
-    reenvio idempotente e a foto vista pela equipe (IA e Blob simulados nos testes).
+    reenvio idempotente e a foto vista pela equipe (IA e Blob simulados nos testes);
+  - token da API Java (gerado no mesmo formato dela, HS256 e HS512): cidadão envia e vê o próprio relato, o
+    relato guarda o código e não o e-mail, um cidadão não vê o relato de outro, `ADMIN` e `AGENT` da Java
+    recebem `401`, cidadão recebe `403` nas rotas da prefeitura, e assinatura errada ou token vencido dão `401`.
 
 ## Uso de IA generativa
 
@@ -293,7 +313,7 @@ dotnet test SampaTech.sln
 **Como garantimos entendimento e revisão:**
 - Cada etapa foi testada manualmente (Swagger e curl) antes do commit.
 - Todo o código foi revisado e commitado pelo autor, em PRs por funcionalidade.
-- 293 testes automatizados (247 unitários e 46 de integração com SQL Server real).
+- 301 testes automatizados (247 unitários e 54 de integração com SQL Server real).
 
 ## Integrantes
 
