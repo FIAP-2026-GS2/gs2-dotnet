@@ -89,7 +89,7 @@
   <div>
     <div class="tipo">Serviço de IA · Python</div>
     <h3>Detecção de problemas</h3>
-    <p>Extrai os frames e borra rostos e placas;<br>detecta buraco, faixa, poste e alagamento</p>
+    <p>Extrai os frames e borra rostos e placas;<br>detecta buraco, faixa, poste e alagamento;<br>confere a foto do cidadão (LLM)</p>
   </div>
 </div>
 
@@ -180,7 +180,7 @@
     <path d="M 220 600 H 326" stroke="#9aa5b1" stroke-dasharray="6,5" marker-end="url(#pc)"/>
     <!-- API -> SQL -->
     <path d="M 1130 402 H 1231" stroke="#0078d4" marker-end="url(#pa)"/>
-    <!-- API -> IA (borrar a foto do cidadão) -->
+    <!-- API -> IA (borrar e conferir a foto do cidadão) -->
     <path d="M 900 290 V 232 H 736" stroke="#0078d4" marker-end="url(#pa)"/>
     <!-- API -> Blob (foto do cidadão já borrada) -->
     <path d="M 1100 290 V 250 H 1231" stroke="#0078d4" marker-end="url(#pa)"/>
@@ -202,7 +202,7 @@
   <text class="seta-sub" x="300" y="520">POST .../citizen-feedback (foto) · JWT CITIZEN</text>
   <text class="seta-sub" x="510" y="490">sem login</text>
   <text class="seta-sub" x="1140" y="392">EF Core</text>
-  <text class="seta-sub" x="768" y="224">POST /anonymize (X-API-Key)</text>
+  <text class="seta-sub" x="768" y="224">POST /verificar-foto (X-API-Key)</text>
   <text class="seta-sub" x="1138" y="243">foto borrada</text>
   <text class="seta-net" x="560" y="715">Api também usa Application</text>
 </svg>
