@@ -24,11 +24,11 @@ public interface ICitizenFeedbackService
 
 /// <summary>
 /// Fluxo do cidadão: manda a foto de uma ocorrência resolvida (confirma ou contesta o conserto),
-/// a IA borra rostos e placas, a foto vai para o Blob e o relato fica PENDING até a equipe revisar.
+/// a IA borra rostos e placas e confere se a foto serve como prova, a foto vai para o Blob e o relato fica PENDING até a equipe revisar.
 /// </summary>
 public class CitizenFeedbackService(
     IAppDbContext db,
-    IPhotoAnonymizer anonymizer,
+    IPhotoVerifier verifier,
     IPhotoStorage storage,
     IOptions<CitizenPhotoOptions> options,
     TimeProvider timeProvider,
@@ -63,8 +63,19 @@ public class CitizenFeedbackService(
 
         var userId = currentUser.UserId ?? throw new UnauthorizedException("Usuário não identificado no token.");
 
-        // 3. Privacidade: só a versão borrada é guardada. Sem a IA, nada é gravado (503).
-        var anonymized = await anonymizer.AnonymizeAsync(photo, contentType, cancellationToken);
+        // 3. A IA borra a foto e confere se ela serve como prova do que o cidadão diz,
+        //    conforme o tipo do problema. Recusada: 422 com o motivo. Sem a IA: 503. Nos dois, nada é gravado.
+        var category = await db.IssueTypes.AsNoTracking()
+            .Where(type => type.Id == report.IssueTypeId)
+            .Select(type => type.Category)
+            .FirstAsync(cancellationToken);
+
+        var verified = await verifier.VerifyAsync(photo, contentType, category, request.Decision!.Value, cancellationToken);
+        if (!verified.IsValid)
+            throw new PhotoRejectedException(verified.Reason);
+
+        // Só a versão borrada é guardada.
+        var anonymized = verified.Content;
         var storedType = PhotoFormat.Detect(anonymized)
                          ?? throw new ServiceUnavailableException("O serviço de IA devolveu um arquivo que não é imagem.");
 

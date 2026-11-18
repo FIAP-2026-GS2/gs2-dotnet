@@ -127,7 +127,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
         builder.ConfigureTestServices(services =>
         {
-            services.AddSingleton<IPhotoAnonymizer>(Photos);
+            services.AddSingleton<IPhotoVerifier>(Photos);
             services.AddSingleton<IPhotoStorage>(Photos);
         });
     }

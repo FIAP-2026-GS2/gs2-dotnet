@@ -1,15 +1,29 @@
+using SampaTech.Domain.Enums;
+
 namespace SampaTech.Application.Common.Photos;
 
 /// <summary>Foto recebida do cidadão, já lida para a memória (o tamanho é limitado).</summary>
 public record PhotoUpload(string FileName, byte[] Content);
 
 /// <summary>
-/// Borra rostos e placas. A implementação chama o serviço de IA (Infrastructure); se ele estiver
-/// fora do ar, lança ServiceUnavailableException e nada é guardado.
+/// Resultado da conferência da IA: se a foto serve como prova do que o cidadão diz, o motivo
+/// (mostrado a ele quando a foto é recusada) e a foto já borrada, que é a única versão guardada.
 /// </summary>
-public interface IPhotoAnonymizer
+public record VerifiedPhoto(bool IsValid, string Reason, byte[] Content);
+
+/// <summary>
+/// Borra rostos e placas e confere a foto (é mesmo uma via pública? mostra o problema?).
+/// A implementação chama o serviço de IA (Infrastructure); se ele estiver fora do ar, lança
+/// ServiceUnavailableException e nada é guardado.
+/// </summary>
+public interface IPhotoVerifier
 {
-    Task<byte[]> AnonymizeAsync(PhotoUpload photo, string contentType, CancellationToken cancellationToken);
+    Task<VerifiedPhoto> VerifyAsync(
+        PhotoUpload photo,
+        string contentType,
+        IssueCategory category,
+        CitizenFeedbackDecision decision,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Arquivo lido do armazenamento, pronto para devolver na resposta.</summary>
