@@ -17,5 +17,17 @@ services:
       retries: 12
       start_period: 30s
 
+  # Emulador do Azure Blob Storage: guarda as fotos dos cidadãos no ambiente local.
+  # Usa a conta pública de desenvolvimento (UseDevelopmentStorage=true), que não é segredo.
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    container_name: sampatech-azurite
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --skipApiVersionCheck
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite-data:/data
+
 volumes:
   sqlserver-data:
+  azurite-data:

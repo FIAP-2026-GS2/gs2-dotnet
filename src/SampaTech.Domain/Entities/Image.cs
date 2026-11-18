@@ -66,7 +66,9 @@ public class Image
     {
         var value = Guard.RequiredText(filePath, "caminho do arquivo", FilePathMaxLength);
 
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+        // https sempre; http só na própria máquina (emulador Azurite, no ambiente local).
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            || !(uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback)))
             throw new DomainException("O caminho do arquivo deve ser uma URL https.");
 
         return value;

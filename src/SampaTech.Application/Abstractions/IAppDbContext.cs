@@ -23,6 +23,7 @@ public interface IAppDbContext
     DbSet<IssueReport> IssueReports { get; }
     DbSet<IssueHistory> IssueHistories { get; }
     DbSet<IssueAssignment> IssueAssignments { get; }
+    DbSet<CitizenFeedback> CitizenFeedbacks { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

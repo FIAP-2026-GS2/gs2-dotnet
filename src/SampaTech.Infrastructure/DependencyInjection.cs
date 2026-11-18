@@ -8,6 +8,8 @@ using SampaTech.Infrastructure.Auth;
 using SampaTech.Application.Common.Idempotency;
 using SampaTech.Infrastructure.Idempotency;
 using SampaTech.Infrastructure.Persistence;
+using SampaTech.Application.Common.Photos;
+using SampaTech.Infrastructure.Photos;
 
 namespace SampaTech.Infrastructure;
 
@@ -35,6 +37,11 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<AuthOptions>, AuthOptionsValidator>();
         services.AddSingleton<IAuthService, JwtAuthService>();
+
+        // Fotos dos cidadãos: a IA borra (HTTP, com tempo-limite) e o Blob guarda.
+        services.Configure<CitizenPhotoOptions>(configuration.GetSection(CitizenPhotoOptions.SectionName));
+        services.AddHttpClient<IPhotoAnonymizer, HttpPhotoAnonymizer>(client => client.Timeout = TimeSpan.FromSeconds(20));
+        services.AddSingleton<IPhotoStorage, BlobPhotoStorage>();
 
         return services;
     }

@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using SampaTech.Application.Common.Photos;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,10 +25,12 @@ public static class TestUsers
     public const string Manager = "teste-manager";
     public const string Viewer = "teste-viewer";
     public const string IaService = "teste-ia";
+    public const string Citizen = "teste-cidadao";
 
     public static readonly (string Username, string Role)[] All =
     [
-        (Admin, Roles.Admin), (Manager, Roles.Manager), (Viewer, Roles.Viewer), (IaService, Roles.IaService)
+        (Admin, Roles.Admin), (Manager, Roles.Manager), (Viewer, Roles.Viewer), (IaService, Roles.IaService),
+        (Citizen, Roles.Citizen)
     ];
 }
 
@@ -42,6 +46,9 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     private readonly Dictionary<string, string> _tokens = [];
     private string _connectionString = "";
     private Respawner? _respawner;
+
+    /// <summary>IA e Blob simulados: os testes não dependem do serviço Python nem do Azure.</summary>
+    public FakePhotoServices Photos { get; } = new();
 
     /// <summary>Limites altos: os testes comuns não podem esbarrar no rate limit.</summary>
     protected virtual IReadOnlyDictionary<string, string> RateLimits => new Dictionary<string, string>
@@ -80,6 +87,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
         await _respawner!.ResetAsync(connection);
+        Photos.Reset();
     }
 
     /// <summary>Cliente já logado com o usuário do papel (login de verdade; o token é reaproveitado).</summary>
@@ -116,6 +124,12 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
         foreach (var (key, value) in RateLimits)
             builder.UseSetting(key, value);
+
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<IPhotoAnonymizer>(Photos);
+            services.AddSingleton<IPhotoStorage>(Photos);
+        });
     }
 
     Task IAsyncLifetime.DisposeAsync() => DisposeAsync().AsTask();

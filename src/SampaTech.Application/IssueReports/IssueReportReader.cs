@@ -56,6 +56,16 @@ public class IssueReportReader(IAppDbContext db)
 
         var byReport = detections.ToLookup(detection => detection.ReportId);
 
+        // Relatos de cidadãos já aprovados pela equipe, contados por ocorrência e decisão.
+        var citizenCounts = await db.CitizenFeedbacks
+            .Where(feedback => ids.Contains(feedback.IssueReportId) && feedback.Status == CitizenFeedbackStatus.APPROVED)
+            .GroupBy(feedback => new { feedback.IssueReportId, feedback.Decision })
+            .Select(group => new { group.Key.IssueReportId, group.Key.Decision, Total = group.Count() })
+            .ToListAsync(cancellationToken);
+
+        int CitizenCount(int reportId, CitizenFeedbackDecision decision) =>
+            citizenCounts.FirstOrDefault(count => count.IssueReportId == reportId && count.Decision == decision)?.Total ?? 0;
+
         return rows.Select(row =>
         {
             var seen = byReport[row.Id].OrderByDescending(detection => detection.CaptureDate).ToList();
@@ -67,7 +77,9 @@ public class IssueReportReader(IAppDbContext db)
                 latest?.Street, latest?.Neighborhood, row.Level, row.Side,
                 DetectionCount: seen.Count,
                 LastSeenAt: latest?.CaptureDate,
-                PriorityScore: IssuePriority.Calculate(row.Severity, seen.Count, row.OpeningDate, nowUtc));
+                PriorityScore: IssuePriority.Calculate(row.Severity, seen.Count, row.OpeningDate, nowUtc),
+                CitizenConfirmations: CitizenCount(row.Id, CitizenFeedbackDecision.CONFIRM),
+                CitizenContests: CitizenCount(row.Id, CitizenFeedbackDecision.CONTEST));
         }).ToList();
     }
 }
