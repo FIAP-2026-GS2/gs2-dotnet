@@ -29,3 +29,14 @@ public class AuthUser
     public string PasswordHash { get; set; } = "";
     public string Role { get; set; } = "";
 }
+
+/// <summary>
+/// Configuração "JavaAuth": o segredo (JWT_SECRET) com que a API Java assina os tokens dos cidadãos.
+/// Vem do user-secrets (local) ou de variável de ambiente; sem ele, nenhum token da Java é aceito.
+/// </summary>
+public class JavaAuthOptions
+{
+    public const string SectionName = "JavaAuth";
+
+    public string Secret { get; set; } = "";
+}
