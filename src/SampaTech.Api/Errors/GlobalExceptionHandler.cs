@@ -23,6 +23,7 @@ public class GlobalExceptionHandler(
             NotFoundException => (StatusCodes.Status404NotFound, "Recurso não encontrado"),
             ConflictException => (StatusCodes.Status409Conflict, "Conflito com dados existentes"),
             PayloadTooLargeException => (StatusCodes.Status413PayloadTooLarge, "Arquivo grande demais"),
+            PhotoRejectedException => (StatusCodes.Status422UnprocessableEntity, "Foto recusada pela IA"),
             ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Serviço indisponível"),
             _ => (StatusCodes.Status500InternalServerError, "Erro interno")
         };

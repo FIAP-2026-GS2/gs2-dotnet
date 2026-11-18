@@ -114,6 +114,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // UseSetting entra antes do Program.cs ler a configuração (Minimal API lê tudo na montagem).
         builder.UseSetting("ConnectionStrings:DefaultConnection", _connectionString);
         builder.UseSetting("Jwt:Key", _jwtKey);
+        builder.UseSetting("JavaAuth:Secret", JavaTokens.Secret);
 
         for (var i = 0; i < TestUsers.All.Length; i++)
         {
@@ -127,7 +128,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
         builder.ConfigureTestServices(services =>
         {
-            services.AddSingleton<IPhotoAnonymizer>(Photos);
+            services.AddSingleton<IPhotoVerifier>(Photos);
             services.AddSingleton<IPhotoStorage>(Photos);
         });
     }

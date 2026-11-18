@@ -13,7 +13,7 @@ using SampaTech.IntegrationTests.Infrastructure;
 namespace SampaTech.IntegrationTests;
 
 /// <summary>Cidadão confirma ou contesta o conserto com foto; a equipe aprova ou recusa.</summary>
-public class CitizenFeedbackTests(ApiFactory factory) : ApiTest(factory)
+public partial class CitizenFeedbackTests(ApiFactory factory) : ApiTest(factory)
 {
     private static readonly DateTimeOffset Noon = new(2026, 11, 10, 15, 0, 0, TimeSpan.Zero);
 
@@ -233,6 +233,37 @@ public class CitizenFeedbackTests(ApiFactory factory) : ApiTest(factory)
         var manager = await AsAsync(TestUsers.Manager);
         Assert.Equal(0, (await (await manager.GetAsync("/api/citizen-feedback"))
             .ReadAsync<PagedResponse<CitizenFeedbackResponse>>()).TotalItems);
+    }
+
+    [Fact]
+    public async Task Foto_recusada_pela_IA_responde_422_com_o_motivo_e_nada_e_guardado()
+    {
+        var issueId = await ResolvedIssueAsync();
+        var citizen = await AsAsync(TestUsers.Citizen);
+        Factory.Photos.RejectionReason = "A foto não mostra uma via pública: um pássaro em um galho.";
+
+        var response = await SendFeedbackAsync(citizen, issueId, "CONTEST", "O buraco continua lá");
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        var problem = await response.ReadAsync<ProblemDetails>();
+        Assert.Equal("Foto recusada pela IA", problem.Title);
+        Assert.Equal("A foto não mostra uma via pública: um pássaro em um galho.", problem.Detail);
+        Assert.Empty(Factory.Photos.StoredFiles);
+        var manager = await AsAsync(TestUsers.Manager);
+        Assert.Equal(0, (await (await manager.GetAsync("/api/citizen-feedback"))
+            .ReadAsync<PagedResponse<CitizenFeedbackResponse>>()).TotalItems);
+    }
+
+    [Fact]
+    public async Task A_IA_recebe_o_tipo_do_problema_e_a_decisao_do_cidadao()
+    {
+        var issueId = await ResolvedIssueAsync();
+        var citizen = await AsAsync(TestUsers.Citizen);
+
+        await SendFeedbackAsync(citizen, issueId, "CONTEST", "O buraco continua lá");
+
+        // A ocorrência de teste é de buraco (tipo criado pelo Seed).
+        Assert.Equal((IssueCategory.BURACO, CitizenFeedbackDecision.CONTEST), Factory.Photos.LastCheck);
     }
 
     [Fact]
