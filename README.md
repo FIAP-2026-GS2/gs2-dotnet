@@ -8,12 +8,15 @@ São Paulo já tem milhares de câmeras do **Smart Sampa** espalhadas pela cidad
 imagens para a **zeladoria urbana**: em horários fixos (12:00 e 00:00) e durante alertas de chuva forte, frames
 das câmeras são analisados por IA, que detecta **buracos, faixas apagadas, postes apagados e vias alagadas**.
 Cada detecção vira uma **ocorrência** priorizada, a prefeitura atribui uma equipe e o cidadão acompanha o status.
+Depois do conserto, o **cidadão confere com uma foto pelo app**: confirma que ficou resolvido ou contesta ("o
+buraco continua lá"). A equipe revisa a foto; contestação aprovada reabre a ocorrência.
 
 **Privacidade:** rostos e placas são borrados antes de qualquer imagem ser salva. A API recusa imagens que não
 foram anonimizadas.
 
 Esta API é o núcleo da solução: cadastros (câmeras, agendas, órgãos, equipes), registro das capturas e das
-análises da IA, abertura e deduplicação de ocorrências, fluxo de atendimento e consulta pública.
+análises da IA, abertura e deduplicação de ocorrências, fluxo de atendimento, consulta pública e os relatos
+dos cidadãos com foto.
 
 ## Arquitetura
 
@@ -29,20 +32,24 @@ de quem, e o domínio não depende de ninguém.
 |---|---|
 | `src/SampaTech.Domain` | Entidades, regras puras (transições de status, prioridade, "mesmo lugar") e exceções de domínio. |
 | `src/SampaTech.Application` | Casos de uso, DTOs de entrada e saída, validações (FluentValidation) e interfaces. |
-| `src/SampaTech.Infrastructure` | EF Core com SQL Server, migrations, login e token JWT, idempotência e health checks. |
+| `src/SampaTech.Infrastructure` | EF Core com SQL Server, migrations, login e token JWT, idempotência, health checks, chamada à IA para borrar fotos e Blob Storage. |
 | `src/SampaTech.Api` | Rotas Minimal API, autenticação, rate limiting, tratamento global de erros e Swagger. |
-| `tests/SampaTech.UnitTests` | 221 testes de domínio, validações, JWT e configuração. |
-| `tests/SampaTech.IntegrationTests` | 31 testes da API inteira contra um SQL Server real em container. |
+| `tests/SampaTech.UnitTests` | 241 testes de domínio, validações, JWT, configuração e cliente da IA. |
+| `tests/SampaTech.IntegrationTests` | 44 testes da API inteira contra um SQL Server real em container. |
 
 **Stack:** .NET 8, ASP.NET Core Minimal API, EF Core 8, SQL Server (Azure SQL na nuvem, Docker no local),
-JWT, FluentValidation, Swagger, xUnit, WebApplicationFactory, Testcontainers e Respawn.
+JWT, FluentValidation, Swagger, Azure Blob Storage (Azurite no local), xUnit, WebApplicationFactory,
+Testcontainers e Respawn.
 
 ## Como rodar
 
 **Pré-requisitos:** [.NET SDK 8](https://dotnet.microsoft.com/download/dotnet/8.0) e
 [Docker](https://www.docker.com/products/docker-desktop/).
 
-**1. Banco de dados (SQL Server em Docker)**
+**1. Banco de dados e armazenamento de fotos (Docker)**
+
+O `docker compose` sobe o **SQL Server** e o **Azurite** (emulador do Azure Blob Storage, onde ficam as fotos dos
+cidadãos). No ambiente `Development`, a API já aponta para o Azurite (`UseDevelopmentStorage=true`).
 
 ```bash
 cp .env.example .env
@@ -106,6 +113,20 @@ dotnet user-secrets set "Auth:Users:0:Role" "ADMIN" --project src/SampaTech.Api
 Os usuários são conferidos na subida: papel inexistente, hash vazio ou nome repetido impedem a API de iniciar,
 com uma mensagem dizendo o que corrigir.
 
+Para demonstrar o fluxo do cidadão, cadastre também um usuário com o papel `CITIZEN` (ex.: `cidadao-demo`, no
+índice seguinte). E, para a foto ser borrada, aponte a API para o serviço de IA (com o mesmo `IA_API_KEY` do
+`.env` dele):
+
+```bash
+dotnet user-secrets set "AiService:BaseUrl" "http://localhost:8000" --project src/SampaTech.Api
+```
+
+```bash
+dotnet user-secrets set "AiService:ApiKey" "<IA_API_KEY do serviço de IA>" --project src/SampaTech.Api
+```
+
+Sem o serviço de IA no ar, o envio da foto responde `503` e nada é guardado; o resto da API funciona normalmente.
+
 **3. Tabelas (migrations)**
 
 ```bash
@@ -145,6 +166,8 @@ seu banco nem os seus segredos.
 | Login da API responde `401` com a senha certa | O hash foi copiado com a linha `Compilando...` | Gere de novo com `hash-password` e copie só a linha que começa com `AQAAAA`. |
 | A API não sobe e diz qual `Auth:Users` corrigir | Papel inexistente, hash vazio ou usuário repetido | Use os papéis `ADMIN`, `MANAGER`, `VIEWER` ou `IA_SERVICE` e corrija a posição indicada. |
 | `dotnet ef` não é reconhecido | A ferramenta local não foi restaurada | Rode `dotnet tool restore` na raiz do repositório. |
+| Envio da foto responde `503` "O serviço de IA..." | O serviço de IA está desligado, sem `AiService:BaseUrl` ou com `AiService:ApiKey` diferente da `IA_API_KEY` dele | Suba o serviço de IA e confira as duas configurações. A primeira foto demora alguns segundos (os modelos carregam). |
+| Envio da foto responde `503` "O armazenamento de fotos..." | O Azurite (ou a Storage Account) não está no ar | Rode `docker compose up -d` e confira o `sampatech-azurite` em `docker ps`. |
 
 ## Autenticação e papéis
 
@@ -157,9 +180,11 @@ login; só o login, a consulta pública e os health checks são abertos.
 | `MANAGER` | Consultar, cadastrar, atualizar, ativar/desativar, atribuir equipes e mudar status | Gestores da prefeitura |
 | `VIEWER` | Só consultar | Consulta interna |
 | `IA_SERVICE` | Registrar capturas e análises e consultar as agendas devidas | Serviço de IA (Python) |
+| `CITIZEN` | Confirmar ou contestar, com foto, o conserto de uma ocorrência e acompanhar os próprios relatos | Cidadão (app mobile) |
 
-Os papéis da prefeitura formam uma escada (`ADMIN › MANAGER › VIEWER`); o serviço de IA é separado e não
-acessa as rotas da prefeitura.
+Os papéis da prefeitura formam uma escada (`ADMIN › MANAGER › VIEWER`); o serviço de IA e o cidadão são separados
+e não acessam as rotas da prefeitura. Na demonstração, o cidadão é um usuário de configuração da própria API; na
+integração, a API passa a aceitar o token emitido pela API Java para o papel `CITIZEN`, sem mudar a rota.
 
 ## Rotas
 
@@ -179,12 +204,16 @@ Todas as respostas de erro seguem o padrão **ProblemDetails** (RFC 7807), com m
 | Capturas | `GET /api/captures` · `POST /api/captures` | leitura VIEWER · registro IA_SERVICE |
 | Análises da IA | `GET /api/analyses/{id}` · `POST /api/analyses` | leitura VIEWER · registro IA_SERVICE |
 | Ocorrências | `GET /api/issue-reports` · `PATCH .../status` · `POST .../assignments` | leitura VIEWER · ações MANAGER |
-| Consulta pública | `GET /api/public/issue-reports` | sem login |
+| Consulta pública | `GET /api/public/issue-reports` (com `citizenConfirmations` e `citizenContests`) | sem login |
+| Relato do cidadão (foto) | `POST /api/issue-reports/{id}/citizen-feedback` (multipart: `decision`, `notes`, `latitude`, `longitude`, `photo`) | CITIZEN |
+| Relatos: fila e revisão | `GET /api/citizen-feedback` · `PATCH /api/citizen-feedback/{id}/review` | leitura VIEWER · revisão MANAGER |
+| Relato e foto | `GET /api/citizen-feedback/{id}` · `GET /api/citizen-feedback/{id}/photo` | equipe, ou o próprio cidadão |
 | Health checks | `GET /health/live` · `GET /health` | sem login |
 
 Códigos usados: `200`, `201` (com `Location`), `204`, `400` (validação, com o campo e o motivo), `401`, `403`,
 `404`, `409` (conflito, ex.: código repetido ou registro em uso), `422` (chave de idempotência reaproveitada com
-outro conteúdo), `429` (limite de requisições) e `503` (health check com o banco fora do ar).
+outro conteúdo), `413` (foto acima de 5 MB), `429` (limite de requisições) e `503` (health check com o banco fora
+do ar, ou serviço de IA e armazenamento indisponíveis no envio da foto).
 
 ## Regras de negócio
 
@@ -200,6 +229,12 @@ outro conteúdo), `429` (limite de requisições) e `503` (health check com o ba
   aberto (até 15). A lista da prefeitura vem ordenada pela maior prioridade.
 - **Fluxo de status:** `OPEN → ASSIGNED → IN_PROGRESS → RESOLVED`, com `REJECTED` (motivo obrigatório) a partir
   de `OPEN` ou `ASSIGNED`. Cada mudança fica no histórico com o usuário que fez.
+- **Relato do cidadão:** só numa ocorrência **resolvida**. O cidadão confirma (`CONFIRM`) ou contesta (`CONTEST`,
+  motivo obrigatório) com uma foto JPG ou PNG de até 5 MB. A API pede ao serviço de IA para borrar rostos e
+  placas e **só guarda a versão borrada**; o relato nasce `PENDING` ("Foto recebida e validada pela IA. Aguardamos
+  a aprovação da equipe para confirmar o relato."). A equipe vê a foto e aprova ou recusa (recusa exige motivo):
+  - confirmação aprovada: "Ocorrência resolvida e validada por N cidadão(s)" (fica no histórico);
+  - contestação aprovada: a ocorrência volta para `OPEN` e entra de novo na fila da equipe.
 - **Consulta pública:** o cidadão vê as ocorrências sem dados internos (usuários, observações, equipes e
   prioridade); ocorrências rejeitadas não aparecem.
 
@@ -207,11 +242,12 @@ outro conteúdo), `429` (limite de requisições) e `503` (health check com o ba
 
 | Tema | Decisão | Por quê |
 |---|---|---|
-| **Idempotência** | Header `Idempotency-Key` obrigatório em `POST /api/captures` e `POST /api/analyses`; a resposta fica guardada no banco. Reenvio com o mesmo conteúdo devolve a resposta original (`Idempotency-Replayed: true`); com outro conteúdo, `422`. | O serviço de IA reenvia quando a rede falha. Sem isso, a mesma foto viraria duas capturas e duas ocorrências. Há ainda uma segunda proteção: índice único por câmera e horário. |
+| **Idempotência** | Header `Idempotency-Key` obrigatório em `POST /api/captures`, `POST /api/analyses` e no envio da foto do cidadão (no formulário, a impressão digital inclui o SHA-256 da foto); a resposta fica guardada no banco. Reenvio com o mesmo conteúdo devolve a resposta original (`Idempotency-Replayed: true`); com outro conteúdo, `422`. | O serviço de IA reenvia quando a rede falha. Sem isso, a mesma foto viraria duas capturas e duas ocorrências. Há ainda uma segunda proteção: índice único por câmera e horário. |
 | **Rate limiting** | Login: 5 por minuto por IP (janela fixa). Serviço de IA: balde de 100 fichas, +50 por minuto. Rota pública: 60 por minuto por IP (janela deslizante). Demais rotas: 120 por minuto por usuário. Resposta `429` com `Retry-After`. | Cada rota tem um risco: adivinhação de senha no login, rajadas legítimas da IA em dia de chuva, abuso na rota aberta. Os limites ficam no `appsettings` e podem ser ajustados sem recompilar. |
 | **Health checks** | `/health/live` só responde se o processo está de pé; `/health` verifica o banco (e o serviço de IA, o Blob e o RabbitMQ quando configurados), com tempo-limite de 3 s. Respostas em JSON, sem detalhes de erro. | O Azure reinicia a API pelo `/health/live`; se o banco cair, reiniciar não resolve, então o `/health` só informa `503`. Serviços externos fora do ar deixam a API `Degraded`, não `Unhealthy`, porque ela continua útil. |
 | **Erros** | Um tratador global converte exceções em ProblemDetails; erros de chave única e de FK do SQL Server viram `409` com mensagem amigável. | Formato único para quem consome a API e nenhum detalhe interno exposto. |
 | **Banco** | Nomes de tabelas e colunas iguais ao modelo relacional do grupo; índices únicos filtrados (captura por câmera e horário; uma atribuição aberta por ocorrência). | O banco segue o modelo relacional definido pelo grupo, e as regras de unicidade ficam garantidas pelo banco, não só pelo código. |
+| **Fotos do cidadão** | A API recebe o arquivo, confere o formato pelos bytes (não pela extensão), pede ao serviço de IA para borrar (`POST /anonymize`) e guarda só a versão borrada num container **privado** do Blob. A foto sai só por `GET /api/citizen-feedback/{id}/photo`, com login. Tabela nova `CITIZEN_FEEDBACK` (fora do DER original, avisada ao grupo). | A promessa de privacidade vale também para as fotos do app: sem a IA, nada é guardado (`503`). O relato precisa de um ciclo próprio (pendente, aprovado, recusado) e de contagem, o que não cabe no histórico. |
 | **Datas** | Instantes gravados em UTC; regras de relógio (12:00, 00:00) no fuso `America/Sao_Paulo`. | Evita erro de fuso entre o servidor na nuvem e o horário da cidade. |
 | **Segredos** | Senhas guardadas só como hash (PBKDF2); chave JWT e connection strings no user-secrets (local) ou em variáveis de ambiente (Azure). | Nenhuma credencial no repositório, que é público. |
 
@@ -221,16 +257,20 @@ outro conteúdo), `429` (limite de requisições) e `503` (health check com o ba
 dotnet test SampaTech.sln
 ```
 
-- **Unitários (221):** regras do domínio (transições, prioridade, deduplicação, agendas), validações, login e
-  token, validação dos usuários na subida e registro dos health checks.
-- **Integração (31):** a API inteira em memória (`WebApplicationFactory`) contra um **SQL Server real** em
+- **Unitários (241):** regras do domínio (transições, prioridade, deduplicação, agendas, relato do cidadão e
+  reabertura), validações, login e token, validação dos usuários na subida, registro dos health checks, formato
+  da foto e o cliente do serviço de IA (fora do ar e erro viram `503`).
+- **Integração (44):** a API inteira em memória (`WebApplicationFactory`) contra um **SQL Server real** em
   container (Testcontainers), com o banco limpo antes de cada teste (Respawn). Cobrem:
   - segurança: `401` sem token ou com token adulterado, `403` por papel;
   - CRUD de câmeras: `201`, `404`, `409`, `400` com o campo;
   - fluxo central: captura → análise → ocorrência visível para a prefeitura e o cidadão, deduplicação e
     confiança baixa;
   - idempotência: reenvio, `422` e índice único;
-  - rate limiting (`429` com `Retry-After`) e health checks.
+  - rate limiting (`429` com `Retry-After`) e health checks;
+  - relato do cidadão: envio com foto, aprovação (validada por N cidadãos), contestação que reabre, recusa com
+    motivo, `409` em ocorrência não resolvida, `401` e `403`, `400`, `413`, IA fora do ar (`503` sem gravar nada),
+    reenvio idempotente e a foto vista pela equipe (IA e Blob simulados nos testes).
 
 ## Uso de IA generativa
 
@@ -247,7 +287,7 @@ dotnet test SampaTech.sln
 **Como garantimos entendimento e revisão:**
 - Cada etapa foi testada manualmente (Swagger e curl) antes do commit.
 - Todo o código foi revisado e commitado pelo autor, em PRs por funcionalidade.
-- 252 testes automatizados (221 unitários e 31 de integração com SQL Server real).
+- 285 testes automatizados (241 unitários e 44 de integração com SQL Server real).
 
 ## Integrantes
 

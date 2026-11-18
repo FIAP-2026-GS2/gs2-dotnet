@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SampaTech.Application.Analyses;
 using SampaTech.Application.Cameras;
 using SampaTech.Application.Captures;
+using SampaTech.Application.CitizenFeedbacks;
 using SampaTech.Application.CaptureSchedules;
 using SampaTech.Application.IssueReports;
 using SampaTech.Application.IssueTypes;
@@ -39,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IAnalysisService, AnalysisService>();
         services.AddScoped<IDueScheduleService, DueScheduleService>();
         services.AddScoped<IIssueReportService, IssueReportService>();
+        services.AddScoped<ICitizenFeedbackService, CitizenFeedbackService>();
 
         return services;
     }

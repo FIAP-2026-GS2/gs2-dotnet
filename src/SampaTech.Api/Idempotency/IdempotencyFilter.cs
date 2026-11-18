@@ -35,7 +35,11 @@ public class IdempotencyFilter<TRequest> : IEndpointFilter
 
         // A impressão digital considera método, rota (inclui ids da URL) e corpo já convertido.
         var request = context.Arguments.OfType<TRequest>().FirstOrDefault();
-        var requestHash = Hash($"{http.Request.Method} {http.Request.Path}|{JsonSerializer.Serialize(request, jsonOptions)}");
+        // Formulário com arquivo não vira JSON: ele mesmo diz a sua impressão digital.
+        var body = request is IIdempotencyFingerprint fingerprint
+            ? fingerprint.GetFingerprint()
+            : JsonSerializer.Serialize(request, jsonOptions);
+        var requestHash = Hash($"{http.Request.Method} {http.Request.Path}|{body}");
 
         var check = await store.TryBeginAsync(key, requestHash, http.RequestAborted);
 
@@ -70,8 +74,11 @@ public class IdempotencyFilter<TRequest> : IEndpointFilter
             throw;
         }
 
+        // Rotas com mais de um tipo de resposta (Results<A, B>) embrulham o resultado real.
+        var inner = result is INestedHttpResult nested ? nested.Result : result;
+
         // Só respostas de sucesso ficam guardadas para as repetições.
-        if (result is IStatusCodeHttpResult { StatusCode: >= 200 and < 300 } success and IValueHttpResult withValue)
+        if (inner is IStatusCodeHttpResult { StatusCode: >= 200 and < 300 } success and IValueHttpResult withValue)
             await store.CompleteAsync(
                 key, success.StatusCode!.Value, JsonSerializer.Serialize(withValue.Value, jsonOptions), CancellationToken.None);
         else
@@ -82,6 +89,15 @@ public class IdempotencyFilter<TRequest> : IEndpointFilter
 
     private static string Hash(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+}
+
+/// <summary>
+/// Para pedidos que não são JSON (ex.: multipart com foto): o próprio pedido monta o texto que
+/// identifica o conteúdo (campos + SHA-256 do arquivo), usado para comparar repetições.
+/// </summary>
+public interface IIdempotencyFingerprint
+{
+    string GetFingerprint();
 }
 
 /// <summary>Marca a rota como idempotente (usado pelo Swagger para mostrar o header).</summary>

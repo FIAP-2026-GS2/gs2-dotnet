@@ -270,6 +270,74 @@ namespace SampaTech.Infrastructure.Persistence.Migrations
                     b.ToTable("CAPTURE_SCHEDULE", (string)null);
                 });
 
+            modelBuilder.Entity("SampaTech.Domain.Entities.CitizenFeedback", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_FEEDBACK");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CaptureId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_CAPTURE");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("DECISION");
+
+                    b.Property<int>("IssueReportId")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_ISSUE_REPORT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("NOTES");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("REVIEW_NOTES");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("REVIEWED_AT");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("REVIEWED_BY");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("STATUS");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ID_USER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CaptureId");
+
+                    b.HasIndex("IssueReportId", "Status")
+                        .HasDatabaseName("IX_CITIZEN_FEEDBACK_ISSUE_STATUS");
+
+                    b.ToTable("CITIZEN_FEEDBACK", (string)null);
+                });
+
             modelBuilder.Entity("SampaTech.Domain.Entities.Image", b =>
                 {
                     b.Property<int>("Id")
@@ -804,6 +872,23 @@ namespace SampaTech.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Camera");
+                });
+
+            modelBuilder.Entity("SampaTech.Domain.Entities.CitizenFeedback", b =>
+                {
+                    b.HasOne("SampaTech.Domain.Entities.Capture", "Capture")
+                        .WithMany()
+                        .HasForeignKey("CaptureId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SampaTech.Domain.Entities.IssueReport", null)
+                        .WithMany()
+                        .HasForeignKey("IssueReportId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Capture");
                 });
 
             modelBuilder.Entity("SampaTech.Domain.Entities.Image", b =>

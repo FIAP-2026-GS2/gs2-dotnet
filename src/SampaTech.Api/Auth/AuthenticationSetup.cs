@@ -66,6 +66,11 @@ public static class AuthenticationSetup
             options.AddPolicy(AuthPolicies.Manage, policy => policy.RequireRole(Roles.Admin, Roles.Manager));
             options.AddPolicy(AuthPolicies.Delete, policy => policy.RequireRole(Roles.Admin));
             options.AddPolicy(AuthPolicies.IaService, policy => policy.RequireRole(Roles.IaService));
+
+            // Cidadão: só envia e acompanha os próprios relatos com foto.
+            options.AddPolicy(AuthPolicies.Citizen, policy => policy.RequireRole(Roles.Citizen));
+            options.AddPolicy(AuthPolicies.ReadOrCitizen,
+                policy => policy.RequireRole(Roles.Admin, Roles.Manager, Roles.Viewer, Roles.Citizen));
         });
 
         services.AddHttpContextAccessor();
@@ -91,4 +96,6 @@ public static class AuthenticationSetup
 public class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentUser
 {
     public string? UserId => accessor.HttpContext?.User.FindFirst("sub")?.Value;
+
+    public bool IsInRole(string role) => accessor.HttpContext?.User.IsInRole(role) ?? false;
 }

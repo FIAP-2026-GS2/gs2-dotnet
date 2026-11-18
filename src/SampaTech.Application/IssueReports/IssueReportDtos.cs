@@ -38,7 +38,9 @@ public record IssueReportSummaryResponse(
     StreetSide? Side,
     int DetectionCount,
     DateTime? LastSeenAt,
-    int PriorityScore);
+    int PriorityScore,
+    int CitizenConfirmations = 0,  // relatos de cidadãos aprovados que confirmam o conserto
+    int CitizenContests = 0);      // relatos de cidadãos aprovados que contestam o conserto
 
 public record IssueHistoryResponse(
     IssueStatus? PreviousStatus, IssueStatus NewStatus, string? Notes, DateTime ChangeDate, string? UserId);
@@ -81,4 +83,6 @@ public record PublicIssueReportResponse(
     int? Level,
     StreetSide? Side,
     int DetectionCount,
-    DateTime? LastSeenAt);
+    DateTime? LastSeenAt,
+    int CitizenConfirmations = 0,
+    int CitizenContests = 0);

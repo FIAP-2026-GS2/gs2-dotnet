@@ -119,7 +119,8 @@ public class IssueReportService(IAppDbContext db, TimeProvider timeProvider, ICu
             .Select(item => new PublicIssueReportResponse(
                 item.Id, item.Title, Description: null, item.IssueTypeName, item.Category, item.Severity,
                 item.Status, item.OpeningDate, item.ResolutionDate, item.Street, item.Neighborhood,
-                item.Level, item.Side, item.DetectionCount, item.LastSeenAt));
+                item.Level, item.Side, item.DetectionCount, item.LastSeenAt,
+                item.CitizenConfirmations, item.CitizenContests));
 
         var page = Page(ordered, query.Page, query.PageSize);
 
