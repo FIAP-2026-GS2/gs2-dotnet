@@ -40,8 +40,9 @@ public static class DependencyInjection
 
         // Fotos dos cidadãos: a IA borra (HTTP, com tempo-limite) e o Blob guarda.
         services.Configure<CitizenPhotoOptions>(configuration.GetSection(CitizenPhotoOptions.SectionName));
-        // 45 s: a IA borra a foto e ainda consulta o LLM de visão (com provedor reserva se o principal falhar).
-        services.AddHttpClient<IPhotoVerifier, HttpPhotoVerifier>(client => client.Timeout = TimeSpan.FromSeconds(45));
+        // 60 s: a IA borra a foto e ainda consulta o LLM de visão; se o principal falhar (ex.: limite 429),
+        // o provedor reserva responde, e no ensaio real isso levou até ~37 s.
+        services.AddHttpClient<IPhotoVerifier, HttpPhotoVerifier>(client => client.Timeout = TimeSpan.FromSeconds(60));
         services.AddSingleton<IPhotoStorage, BlobPhotoStorage>();
 
         return services;
