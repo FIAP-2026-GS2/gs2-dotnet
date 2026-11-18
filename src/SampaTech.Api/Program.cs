@@ -81,6 +81,9 @@ builder.Services.AddSwaggerGen(options =>
 
     // Documenta o 429 nas rotas com limite de requisições.
     options.OperationFilter<TooManyRequestsOperationFilter>();
+
+    // Mostra os campos do formulário da foto (com o botão de escolher arquivo).
+    options.OperationFilter<MultipartFormOperationFilter>();
 });
 
 var app = builder.Build();
@@ -122,6 +125,7 @@ app.MapCaptureEndpoints();
 app.MapAnalysisEndpoints();
 app.MapDueScheduleEndpoints();
 app.MapIssueReportEndpoints();
+app.MapCitizenFeedbackEndpoints();
 
 app.Run();
 

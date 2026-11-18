@@ -22,6 +22,8 @@ public class GlobalExceptionHandler(
             UnauthorizedException => (StatusCodes.Status401Unauthorized, "Não autenticado"),
             NotFoundException => (StatusCodes.Status404NotFound, "Recurso não encontrado"),
             ConflictException => (StatusCodes.Status409Conflict, "Conflito com dados existentes"),
+            PayloadTooLargeException => (StatusCodes.Status413PayloadTooLarge, "Arquivo grande demais"),
+            ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Serviço indisponível"),
             _ => (StatusCodes.Status500InternalServerError, "Erro interno")
         };
 
