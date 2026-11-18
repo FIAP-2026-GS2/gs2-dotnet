@@ -80,7 +80,7 @@
 <div class="ator" style="left: 40px; top: 470px;">
   <svg id="e24671f6-f501-4952-a2db-8b0b1d329c17-u2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="56" height="56"><defs><linearGradient id="be92901b-ec33-4c65-adf1-9b0eed06d677-u2" x1="9" y1="6.88" x2="9" y2="20.45" gradientUnits="userSpaceOnUse"><stop offset="0.22" stop-color="#32d4f5" /><stop offset="1" stop-color="#198ab3" /></linearGradient><linearGradient id="b46fc246-25d8-4398-8779-1042e8cacae7-u2" x1="8.61" y1="-0.4" x2="9.6" y2="11.92" gradientUnits="userSpaceOnUse"><stop offset="0.22" stop-color="#32d4f5" /><stop offset="1" stop-color="#198ab3" /></linearGradient></defs><path d="M15.72,18a1.45,1.45,0,0,0,1.45-1.45.47.47,0,0,0,0-.17C16.59,11.81,14,8.09,9,8.09S1.34,11.24.83,16.39A1.46,1.46,0,0,0,2.14,18H15.72Z" fill="url(#be92901b-ec33-4c65-adf1-9b0eed06d677-u2)" /><path d="M9,9.17a4.59,4.59,0,0,1-2.48-.73L9,14.86l2.44-6.38A4.53,4.53,0,0,1,9,9.17Z" fill="#fff" opacity="0.8" /><circle cx="9.01" cy="4.58" r="4.58" fill="url(#b46fc246-25d8-4398-8779-1042e8cacae7-u2)" /></svg>
   <h3>Cidadão</h3>
-  <p>acompanha as ocorrências<br>do seu bairro</p>
+  <p>acompanha as ocorrências e<br>confere o conserto com foto</p>
 </div>
 
 <!-- Serviço de IA -->
@@ -108,10 +108,10 @@
   <div>
     <div class="tipo">ASP.NET Core 8 · Minimal API</div>
     <h3>API SampaTech</h3>
-    <p>Câmeras, agendas, capturas, análises da IA,<br>ocorrências com deduplicação e prioridade,<br>equipes e consulta pública</p>
+    <p>Câmeras, agendas, capturas, análises da IA,<br>ocorrências com deduplicação e prioridade,<br>equipes, consulta pública e relatos do<br>cidadão com foto (aprovados pela equipe)</p>
     <div class="chips">
       <span class="chip">JWT</span><span class="chip">Idempotência</span><span class="chip">Rate limiting</span>
-      <span class="chip">Health checks</span><span class="chip">Swagger</span>
+      <span class="chip">Health checks</span><span class="chip">Swagger</span><span class="chip">Upload de foto</span>
     </div>
   </div>
 </div>
@@ -125,7 +125,7 @@
   <div>
     <div class="tipo">Storage Account · Blob</div>
     <h3>Imagens</h3>
-    <p>container <code>frames</code>, só imagens<br>já anonimizadas</p>
+    <p><code>frames</code> e <code>citizen-photos</code><br>(privado): só imagens borradas</p>
   </div>
 </div>
 <div class="card" style="left: 1235px; top: 345px; width: 300px; height: 115px;">
@@ -133,7 +133,7 @@
   <div>
     <div class="tipo">Azure SQL Database</div>
     <h3>SampaTech</h3>
-    <p>14 tabelas do modelo relacional<br>criadas pelas migrations</p>
+    <p>14 tabelas do DER + CITIZEN_FEEDBACK,<br>criadas pelas migrations</p>
   </div>
 </div>
 <div class="nota" style="left: 1235px; top: 482px; width: 300px;">A hospedagem da API no Azure entra<br>na entrega de Cloud (Dockerfile e pipeline).</div>
@@ -180,6 +180,10 @@
     <path d="M 220 600 H 326" stroke="#9aa5b1" stroke-dasharray="6,5" marker-end="url(#pc)"/>
     <!-- API -> SQL -->
     <path d="M 1130 402 H 1231" stroke="#0078d4" marker-end="url(#pa)"/>
+    <!-- API -> IA (borrar a foto do cidadão) -->
+    <path d="M 900 290 V 232 H 736" stroke="#0078d4" marker-end="url(#pa)"/>
+    <!-- API -> Blob (foto do cidadão já borrada) -->
+    <path d="M 1100 290 V 250 H 1231" stroke="#0078d4" marker-end="url(#pa)"/>
     <!-- camadas -->
     <path d="M 380 820 H 451" stroke="#512bd4" marker-end="url(#pn)"/>
     <path d="M 755 820 H 826" stroke="#512bd4" marker-end="url(#pn)"/>
@@ -195,8 +199,11 @@
   <text class="seta-txt" x="300" y="395">HTTPS · JWT Bearer</text>
   <text class="seta-sub" x="460" y="395">cadastros, atribuição, status</text>
   <text class="seta-txt" x="300" y="490">GET /api/public/issue-reports</text>
+  <text class="seta-sub" x="300" y="520">POST .../citizen-feedback (foto) · JWT CITIZEN</text>
   <text class="seta-sub" x="510" y="490">sem login</text>
   <text class="seta-sub" x="1140" y="392">EF Core</text>
+  <text class="seta-sub" x="768" y="224">POST /anonymize (X-API-Key)</text>
+  <text class="seta-sub" x="1138" y="243">foto borrada</text>
   <text class="seta-net" x="560" y="715">Api também usa Application</text>
 </svg>
 
