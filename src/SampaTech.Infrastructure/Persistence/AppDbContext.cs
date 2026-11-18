@@ -51,6 +51,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<IssueReport> IssueReports => Set<IssueReport>();
     public DbSet<IssueHistory> IssueHistories => Set<IssueHistory>();
     public DbSet<IssueAssignment> IssueAssignments => Set<IssueAssignment>();
+    public DbSet<CitizenFeedback> CitizenFeedbacks => Set<CitizenFeedback>();
 
     // Tabela técnica: fica fora do IAppDbContext, porque só o Infrastructure a usa.
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();

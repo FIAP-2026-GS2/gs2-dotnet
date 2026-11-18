@@ -59,10 +59,14 @@ public static class HealthCheckSetup
 
         if (configuration.GetConnectionString("BlobStorage") is { Length: > 0 } blobConnectionString)
         {
-            var containerName = configuration["BlobStorage:ContainerName"] ?? "frames";
+            // Com container configurado, confere que ele existe; vazio, confere só se a conta responde.
+            var containerName = configuration["BlobStorage:ContainerName"];
             checks.AddAzureBlobStorage(
                 clientFactory: _ => new BlobServiceClient(blobConnectionString),
-                optionsFactory: _ => new AzureBlobStorageHealthCheckOptions { ContainerName = containerName },
+                optionsFactory: _ => new AzureBlobStorageHealthCheckOptions
+                {
+                    ContainerName = string.IsNullOrWhiteSpace(containerName) ? null : containerName
+                },
                 name: HealthCheckNames.BlobStorage,
                 failureStatus: HealthStatus.Degraded,
                 tags: ready);

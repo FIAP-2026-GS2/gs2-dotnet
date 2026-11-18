@@ -12,9 +12,10 @@ public static class Roles
     public const string Manager = "MANAGER";      // gestão do dia a dia: cadastra, edita, atribui, muda status
     public const string Viewer = "VIEWER";        // só consulta
     public const string IaService = "IA_SERVICE"; // o serviço de IA em Python (não é pessoa)
+    public const string Citizen = "CITIZEN";      // cidadão: confirma ou contesta o conserto com foto
 
     // Únicos valores aceitos no campo Role da configuração (conferido na subida da API).
-    public static readonly IReadOnlyList<string> All = [Admin, Manager, Viewer, IaService];
+    public static readonly IReadOnlyList<string> All = [Admin, Manager, Viewer, IaService, Citizen];
 }
 
 /// <summary>
@@ -27,6 +28,8 @@ public static class AuthPolicies
     public const string Manage = "Manage";       // ADMIN, MANAGER
     public const string Delete = "Delete";       // só ADMIN (exclusão é irreversível)
     public const string IaService = "IaService"; // só IA_SERVICE
+    public const string Citizen = "Citizen";     // só CITIZEN
+    public const string ReadOrCitizen = "ReadOrCitizen"; // gestores e o cidadão (que só vê o que é dele)
 }
 
 public record LoginRequest(string Username, string Password);
@@ -55,4 +58,6 @@ public interface IAuthService
 public interface ICurrentUser
 {
     string? UserId { get; }
+
+    bool IsInRole(string role);
 }
