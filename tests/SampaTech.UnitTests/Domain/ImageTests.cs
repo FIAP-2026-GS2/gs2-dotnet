@@ -44,6 +44,15 @@ public class ImageTests
         Assert.Contains("https", exception.Message);
     }
 
+    // No ambiente local, o emulador Azurite responde em http na própria máquina.
+    [Theory]
+    [InlineData("http://127.0.0.1:10000/devstoreaccount1/citizen-photos/a.jpg")]
+    [InlineData("http://localhost:10000/devstoreaccount1/citizen-photos/a.jpg")]
+    public void Constructor_accepts_http_only_on_the_local_machine(string filePath)
+    {
+        Assert.Equal(filePath, CreateImage(filePath: filePath).FilePath);
+    }
+
     [Fact]
     public void Constructor_normalizes_hash_to_lowercase()
     {

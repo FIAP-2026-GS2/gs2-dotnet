@@ -15,8 +15,9 @@ public class IssueReport
     public const int DescriptionMaxLength = 1000;
     public const int UserIdMaxLength = 100;
 
-    // Transições permitidas. RESOLVED e REJECTED são finais: se o problema voltar,
-    // a nova detecção abre outra ocorrência (a deduplicação só procura as abertas).
+    // Transições permitidas pelo gestor. RESOLVED e REJECTED são finais para ele: se o problema
+    // voltar, a nova detecção abre outra ocorrência (a deduplicação só procura as abertas).
+    // A única volta de RESOLVED é a contestação de um cidadão aprovada pela equipe (ReopenByCitizen).
     // ASSIGNED não está aqui de propósito: só se chega a ele por AssignTo.
     private static readonly Dictionary<IssueStatus, IssueStatus[]> AllowedTransitions = new()
     {
@@ -196,6 +197,28 @@ public class IssueReport
         }
 
         RecordStatusChange(newStatus, changedAt, notes, userId);
+    }
+
+    // Relato de cidadão aprovado: confirma o conserto. O status continua RESOLVED; fica o registro.
+    public void RecordCitizenConfirmation(DateTime confirmedAt, string notes, string? userId = null)
+    {
+        if (Status != IssueStatus.RESOLVED)
+            throw new DomainException($"Só uma ocorrência resolvida pode ter o conserto confirmado (atual: {Status}).");
+
+        _history.Add(new IssueHistory(
+            this, IssueStatus.RESOLVED, IssueStatus.RESOLVED, notes, Guard.Utc(confirmedAt, "confirmação"), userId));
+    }
+
+    // Contestação de cidadão aprovada pela equipe: o problema continua lá, então a ocorrência
+    // volta para OPEN e entra de novo na fila (pode ser atribuída outra vez).
+    public void ReopenByCitizen(DateTime reopenedAt, string notes, string? userId = null)
+    {
+        if (Status != IssueStatus.RESOLVED)
+            throw new DomainException($"Só uma ocorrência resolvida pode ser reaberta (atual: {Status}).");
+
+        Guard.Utc(reopenedAt, "reabertura");
+        ResolutionDate = null;
+        RecordStatusChange(IssueStatus.OPEN, reopenedAt, notes, userId);
     }
 
     private void RecordStatusChange(IssueStatus newStatus, DateTime changedAt, string? notes, string? userId)
