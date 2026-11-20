@@ -60,7 +60,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "SampaTech API",
-        Version = "v1",
+        Version = "1.3.1",
         Description = "Zeladoria urbana a partir das câmeras do Smart Sampa: câmeras, agendas de captura, " +
                       "detecções da IA e ocorrências acompanhadas pela prefeitura e pelo cidadão. " +
                       "Faça login em POST /api/auth/login e cole o token no botão Authorize."
